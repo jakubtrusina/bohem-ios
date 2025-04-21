@@ -1,0 +1,321 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 48;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		02BC7EA536078D37979829F8 /* LaunchScreenIOS.png in Resources */ = {isa = PBXBuildFile; fileRef = 20253F4B6204587345A1E50A /* LaunchScreenIOS.png */; };
+		53EC471BE591DB079A7575CD /* UEMetadata in Resources */ = {isa = PBXBuildFile; fileRef = 96847116A6498C60D773BE0D /* UEMetadata */; };
+		5BFF59FCEC2CF07147A64D9A /* EOSSDK.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B110F7C674E5810857B75110 /* EOSSDK.framework */; };
+		C5F6D63BA7F4E5918860E9AB /* EOSSDK.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = B110F7C674E5810857B75110 /* EOSSDK.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		E60E1485CE54BF349D5D3474 /* LaunchScreen.storyboardc in Resources */ = {isa = PBXBuildFile; fileRef = 83CFAFA3E9D1917E2272C873 /* LaunchScreen.storyboardc */; };
+		EF9C4AFD11FC738FBA2B1E8B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 745D9D5E3EAD703666BAFFEC /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		7D22C4FEABD3EB148F9299DF /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				C5F6D63BA7F4E5918860E9AB /* EOSSDK.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		1379E17F2BAD7CF1EA750E79 /* MyProject_Development.xcconfig */ = {isa = PBXFileReference; explicitFileType = test.xcconfig; lastKnownFileType = text.xcconfig; name = MyProject_Development.xcconfig; path = XcconfigsIOS/MyProject_Development.xcconfig; sourceTree = "<group>"; };
+		1AFD5D4B096EEAEAF19C0241 /* Info.Template.plist */ = {isa = PBXFileReference; explicitFileType = text.plist; name = Info.Template.plist; path = ../../Build/IOS/UBTGenerated/Info.Template.plist; sourceTree = "<group>"; };
+		20253F4B6204587345A1E50A /* LaunchScreenIOS.png */ = {isa = PBXFileReference; explicitFileType = image.png; name = LaunchScreenIOS.png; path = /Users/jakubtrusina/Desktop/UE_5.5/Engine/Build/IOS/Resources/Graphics/LaunchScreenIOS.png; sourceTree = "<absolute>"; };
+		211663533F61FE14D854274A /* MyProject.Build.cs */ = {isa = PBXFileReference; explicitFileType = file.txt; lastKnownFileType = file; name = MyProject.Build.cs; path = ../Source/MyProject.Build.cs; sourceTree = SOURCE_ROOT; };
+		4405C774B3D7824C0C76E68A /* MyProject_Shipping.xcconfig */ = {isa = PBXFileReference; explicitFileType = test.xcconfig; lastKnownFileType = text.xcconfig; name = MyProject_Shipping.xcconfig; path = XcconfigsIOS/MyProject_Shipping.xcconfig; sourceTree = "<group>"; };
+		5C61116B55ABEEF2CB288080 /* MyProject.Target.cs */ = {isa = PBXFileReference; explicitFileType = file.txt; lastKnownFileType = file; name = MyProject.Target.cs; path = ../Source/MyProject.Target.cs; sourceTree = SOURCE_ROOT; };
+		745D9D5E3EAD703666BAFFEC /* Assets.xcassets */ = {isa = PBXFileReference; explicitFileType = folder.assetcatalog; name = Assets.xcassets; path = /Users/jakubtrusina/Desktop/UE_5.5/Engine/Build/IOS/Resources/Assets.xcassets; sourceTree = "<absolute>"; };
+		7EFF5567E002D02E5AB56166 /* MyProject.uproject */ = {isa = PBXFileReference; explicitFileType = file.txt; lastKnownFileType = file; name = MyProject.uproject; path = ../../MyProject.uproject; sourceTree = SOURCE_ROOT; };
+		83CFAFA3E9D1917E2272C873 /* LaunchScreen.storyboardc */ = {isa = PBXFileReference; explicitFileType = wrapper.storyboardc; name = LaunchScreen.storyboardc; path = /Users/jakubtrusina/Desktop/UE_5.5/Engine/Build/IOS/Resources/Interface/LaunchScreen.storyboardc; sourceTree = "<absolute>"; };
+		96847116A6498C60D773BE0D /* UEMetadata */ = {isa = PBXFileReference; explicitFileType = file.txt; lastKnownFileType = folder; name = UEMetadata; path = /Users/jakubtrusina/Desktop/UE_5.5/Engine/Build/IOS/Resources/UEMetadata; sourceTree = "<absolute>"; };
+		99416EAC739E0FA8F8C73D79 /* MyProject.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; name = MyProject.cpp; path = ../Source/MyProject.cpp; sourceTree = SOURCE_ROOT; };
+		B110F7C674E5810857B75110 /* EOSSDK.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; name = EOSSDK.framework; path = /Users/jakubtrusina/Desktop/UE_5.5/Engine/Source/ThirdParty/EOSSDK/SDK/Bin/IOS/EOSSDK.framework; sourceTree = "<absolute>"; };
+		BBD89AF9034D595095A04AFA /* MyProject_DebugGame.xcconfig */ = {isa = PBXFileReference; explicitFileType = test.xcconfig; lastKnownFileType = text.xcconfig; name = MyProject_DebugGame.xcconfig; path = XcconfigsIOS/MyProject_DebugGame.xcconfig; sourceTree = "<group>"; };
+		BC3C8EB3C6DD6F71B3743109 /* MyProject.xcconfig */ = {isa = PBXFileReference; explicitFileType = test.xcconfig; lastKnownFileType = text.xcconfig; name = MyProject.xcconfig; path = XcconfigsIOS/MyProject.xcconfig; sourceTree = "<group>"; };
+		F867EAD31ED09B308838852C /* .app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = .app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		1C8F1892104802E4480CDB1D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5BFF59FCEC2CF07147A64D9A /* EOSSDK.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		26A8DFFECD9332343E12056A = {
+			isa = PBXGroup;
+			children = (
+				C32A3038BF93580F13F520A7 /* Intermediate */,
+				7EFF5567E002D02E5AB56166 /* MyProject.uproject */,
+				F768EFCE3289F4820F920874 /* Products */,
+				71C63D5327499450274C6A74 /* Frameworks */,
+				95CB0DACC8D0C8291CF4827A /* Resources */,
+				E7A2C9F68F3449838CFB5969 /* Xcconfigs */,
+				59E683D3107766E0A106E4C1 /* Metadata */,
+			);
+			sourceTree = "<group>";
+		};
+		59E683D3107766E0A106E4C1 /* Metadata */ = {
+			isa = PBXGroup;
+			children = (
+				1AFD5D4B096EEAEAF19C0241 /* Info.Template.plist */,
+			);
+			name = Metadata;
+			sourceTree = "<group>";
+		};
+		71C63D5327499450274C6A74 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				B110F7C674E5810857B75110 /* EOSSDK.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		78A1F3874B2EEAD6F4EEAD3C /* Source */ = {
+			isa = PBXGroup;
+			children = (
+				211663533F61FE14D854274A /* MyProject.Build.cs */,
+				99416EAC739E0FA8F8C73D79 /* MyProject.cpp */,
+				5C61116B55ABEEF2CB288080 /* MyProject.Target.cs */,
+			);
+			name = Source;
+			path = /Users/jakubtrusina/Desktop/Me/Intermediate/Source;
+			sourceTree = "<absolute>";
+		};
+		95CB0DACC8D0C8291CF4827A /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				745D9D5E3EAD703666BAFFEC /* Assets.xcassets */,
+				83CFAFA3E9D1917E2272C873 /* LaunchScreen.storyboardc */,
+				20253F4B6204587345A1E50A /* LaunchScreenIOS.png */,
+				96847116A6498C60D773BE0D /* UEMetadata */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		C32A3038BF93580F13F520A7 /* Intermediate */ = {
+			isa = PBXGroup;
+			children = (
+				78A1F3874B2EEAD6F4EEAD3C /* Source */,
+			);
+			name = Intermediate;
+			path = /Users/jakubtrusina/Desktop/Me/Intermediate;
+			sourceTree = "<absolute>";
+		};
+		E7A2C9F68F3449838CFB5969 /* Xcconfigs */ = {
+			isa = PBXGroup;
+			children = (
+				BC3C8EB3C6DD6F71B3743109 /* MyProject.xcconfig */,
+				BBD89AF9034D595095A04AFA /* MyProject_DebugGame.xcconfig */,
+				1379E17F2BAD7CF1EA750E79 /* MyProject_Development.xcconfig */,
+				4405C774B3D7824C0C76E68A /* MyProject_Shipping.xcconfig */,
+			);
+			name = Xcconfigs;
+			sourceTree = "<group>";
+		};
+		F768EFCE3289F4820F920874 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F867EAD31ED09B308838852C /* .app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		9FABE80F282E75D47CF47827 /* MyProject */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CCF9B5BCD6F7F079CD548EE3 /* Build configuration list for PBXNativeTarget "MyProject" */;
+			buildPhases = (
+				24223F053B74926945EE1138 /* Resources */,
+				7D22C4FEABD3EB148F9299DF /* Embed Frameworks */,
+				1C8F1892104802E4480CDB1D /* Frameworks */,
+				8C841C2AC7DFC91FA93B5F82 /* Copy Executable and Staged Data into .app */,
+				543A80F7D8846C53333F8A25 /* Generate dsym for archive, and strip */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MyProject;
+			productName = MyProject;
+			productReference = F867EAD31ED09B308838852C /* .app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		C097C65E59561F28B6FFD39E /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 2000;
+				ORGANIZATIONNAME = "Epic Games, Inc.";
+				TargetAttributes = {
+					9FABE80F282E75D47CF47827 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 3C66A2E2E485CB44496D3B26 /* Build configuration list for PBXProject "MyProject (IOS)" */;
+			compatibilityVersion = "Xcode 8.0";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				English,
+				en,
+			);
+			mainGroup = 26A8DFFECD9332343E12056A;
+			productRefGroup = F768EFCE3289F4820F920874 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				9FABE80F282E75D47CF47827 /* MyProject */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		24223F053B74926945EE1138 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EF9C4AFD11FC738FBA2B1E8B /* Assets.xcassets in Resources */,
+				E60E1485CE54BF349D5D3474 /* LaunchScreen.storyboardc in Resources */,
+				02BC7EA536078D37979829F8 /* LaunchScreenIOS.png in Resources */,
+				53EC471BE591DB079A7575CD /* UEMetadata in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		543A80F7D8846C53333F8A25 /* Generate dsym for archive, and strip */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"\"$(CONFIGURATION_BUILD_DIR)/$(EXECUTABLE_PATH)\"",
+			);
+			name = "Generate dsym for archive, and strip";
+			outputPaths = (
+				"\"$(DWARF_DSYM_FOLDER_PATH)/$(DWARF_DSYM_FILE_NAME)\"",
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+			shellPath = /bin/sh;
+			shellScript = "set -e\n\n# Run the wrapper dsym generator\n\"${UE_ENGINE_DIR}/Build/BatchFiles/Mac/GenerateUniversalDSYM.sh\" \"${CONFIGURATION_BUILD_DIR}/${EXECUTABLE_PATH}\" \"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}\"\nstrip -no_code_signature_warning -D \"${CONFIGURATION_BUILD_DIR}/${EXECUTABLE_PATH}\"\n\n# Remove any unused architectures from dylibs in the .app (param1) that don't match the executable (param2). Also error if a dylib is missing arches\n\"${UE_ENGINE_DIR}/Build/BatchFiles/Mac/ThinApp.sh\" \"${CONFIGURATION_BUILD_DIR}/${CONTENTS_FOLDER_PATH}\" \"${CONFIGURATION_BUILD_DIR}/${EXECUTABLE_PATH}\"";
+		};
+		8C841C2AC7DFC91FA93B5F82 /* Copy Executable and Staged Data into .app */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Copy Executable and Staged Data into .app";
+			outputPaths = (
+				/dev/null,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -eo pipefail\nSRC_EXE=\"${UE_BINARIES_DIR}/${UE_UBT_BINARY_SUBPATH}\"\nDEST_EXE=\"${CONFIGURATION_BUILD_DIR}/${EXECUTABLE_PATH}\"\nDEST_EXE_DIR=`dirname \"${DEST_EXE}\"`\n\necho Copying executable and any standalone dylibs into ${DEST_EXE_DIR} but do not overwrite unless src is newer\nmkdir -p \"${DEST_EXE_DIR}\"\nrsync -au \"${SRC_EXE}\" \"${DEST_EXE}\"\n\n# Skip syncing if desired\nif [[ ${UE_SKIP_STAGEDDATA_SYNC} -eq 1 ]]; then exit 0; fi\n\n# When building engine projects, like UnrealGame, we don't have data to stage unless something has specified UE_OVERRIDE_STAGE_DIR\nif [[ -z ${UE_OVERRIDE_STAGE_DIR} ]]; then \nSTAGED_DIR=\"${UE_PROJECT_DIR}/Saved/StagedBuilds/${UE_TARGET_PLATFORM_NAME}\"\nelse\n  STAGED_DIR=\"${UE_OVERRIDE_STAGE_DIR}\"\nfi\nif [[ -z ${STAGED_DIR} ]]; then exit 0; fi\n# Make sure the staged directory exists and has files in it\nif [[ ! -e \"${STAGED_DIR}\" || ! $(ls -A \"${STAGED_DIR}\") ]]; then \n  echo =========================================================================================\n  echo \"WARNING: To run, you must have a valid staged build directory. The Staged location is:\"\n  echo \"  ${STAGED_DIR}\"\n  echo \"Use the editor's Platforms menu, or run a command like::\"\n  echo \"./RunUAT.sh BuildCookRun -platform=IOS -project=<project> -build -cook -stage -pak\"\n  echo =========================================================================================\n  exit -0 \nfi\nif [[ -e \"${STAGED_DIR}/uecommandline.txt\" ]]; then\n  echo \"Syncing ${STAGED_DIR}/uecommandline.txt to ${CONFIGURATION_BUILD_DIR}/${CONTENTS_FOLDER_PATH}\"\n  cp \"${STAGED_DIR}/uecommandline.txt\" \"${CONFIGURATION_BUILD_DIR}/${CONTENTS_FOLDER_PATH}\"\nfi\n\necho \"Syncing ${STAGED_DIR}/cookeddata to ${CONFIGURATION_BUILD_DIR}/${CONTENTS_FOLDER_PATH}/cookeddata\"\nif [[ -e  \"${STAGED_DIR}/cookeddata\" ]]; then\nrsync -a --delete --exclude=\"/Info.plist\" --exclude=\"/Manifest_*\" --exclude=\"/*.app\" \"${STAGED_DIR}/cookeddata/\" \"${CONFIGURATION_BUILD_DIR}/${CONTENTS_FOLDER_PATH}/cookeddata\"\nelse\n  echo =========================================================================================\n  echo \"WARNING: To run, you must have a valid staged sync source directory. The Staged SyncSource location is:\"\n  echo \"${STAGED_DIR}/cookeddata\"\n  echo \"Use the editor's Platforms menu, or run a command like::\"\n  echo \"./RunUAT.sh BuildCookRun -platform=IOS -project=<project> -build -cook -stage -pak\"\n  echo =========================================================================================\n  exit -0 \nfi";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1BDE5990470C5E4B1C04CA11 /* Shipping */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 4405C774B3D7824C0C76E68A /* MyProject_Shipping.xcconfig */;
+			buildSettings = {
+				DEVELOPMENT_TEAM = 5XZV5H6A56;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bohem.metahuman;
+			};
+			name = Shipping;
+		};
+		35A06886ABA241FE9FFF011C /* Shipping */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ONLY_ACTIVE_ARCH = YES;
+				SUPPORTED_PLATFORMS = "macosx iphonesimulator iphoneos appletvsimulator appletvos xros xrsimulator";
+			};
+			name = Shipping;
+		};
+		4416B724537DB3871199BFAE /* DebugGame */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = BBD89AF9034D595095A04AFA /* MyProject_DebugGame.xcconfig */;
+			buildSettings = {
+				DEVELOPMENT_TEAM = 5XZV5H6A56;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bohem.metahuman;
+			};
+			name = DebugGame;
+		};
+		6E0F008889FE2104EFC20625 /* Development */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 1379E17F2BAD7CF1EA750E79 /* MyProject_Development.xcconfig */;
+			buildSettings = {
+				DEVELOPMENT_TEAM = 5XZV5H6A56;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bohem.metahuman;
+			};
+			name = Development;
+		};
+		DFA223FFBFE066CD6766384D /* Development */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ONLY_ACTIVE_ARCH = YES;
+				SUPPORTED_PLATFORMS = "macosx iphonesimulator iphoneos appletvsimulator appletvos xros xrsimulator";
+			};
+			name = Development;
+		};
+		E6073D12F3C26D2F75517505 /* DebugGame */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ONLY_ACTIVE_ARCH = YES;
+				SUPPORTED_PLATFORMS = "macosx iphonesimulator iphoneos appletvsimulator appletvos xros xrsimulator";
+			};
+			name = DebugGame;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3C66A2E2E485CB44496D3B26 /* Build configuration list for PBXProject "MyProject (IOS)" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E6073D12F3C26D2F75517505 /* DebugGame */,
+				DFA223FFBFE066CD6766384D /* Development */,
+				35A06886ABA241FE9FFF011C /* Shipping */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Development;
+		};
+		CCF9B5BCD6F7F079CD548EE3 /* Build configuration list for PBXNativeTarget "MyProject" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4416B724537DB3871199BFAE /* DebugGame */,
+				6E0F008889FE2104EFC20625 /* Development */,
+				1BDE5990470C5E4B1C04CA11 /* Shipping */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Development;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = C097C65E59561F28B6FFD39E /* Project object */;
+}
