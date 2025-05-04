@@ -2,7 +2,6 @@
 //  PerformanceView.swift
 //  SwiftfulFirebaseBootcamp
 //
-//  Created by Nick Sarno on 1/24/23.
 //
 
 import SwiftUI
@@ -33,15 +32,15 @@ final class PerformanceManager {
 }
 
 struct PerformanceView: View {
-    
+    @StateObject private var viewModel = ProductsViewModel()
     @State private var title: String = "Some Title"
 
     var body: some View {
         Text("Hello, World!")
             .onAppear {
                 configure()
-                downloadProductsAndUploadToFirebase()
-                
+                viewModel.downloadProductsAndUploadToFirebase()
+
                 PerformanceManager.shared.startTrace(name: "performance_screen_time")
             }
             .onDisappear {
@@ -61,26 +60,6 @@ struct PerformanceView: View {
             PerformanceManager.shared.stopTrace(name: "performance_view_loading")
         }
         
-    }
-    
-    func downloadProductsAndUploadToFirebase() {
-        let urlString = "https://dummyjson.com/products"
-        guard let url = URL(string: urlString), let metric = HTTPMetric(url: url, httpMethod: .get) else { return }
-        metric.start()
-
-        Task {
-            do {
-                let (data, response) = try await URLSession.shared.data(from: url)
-                if let response = response as? HTTPURLResponse {
-                    metric.responseCode = response.statusCode
-                }
-                metric.stop()
-                print("SUCCESS")
-            } catch {
-                print(error)
-                metric.stop()
-            }
-        }
     }
 
 }

@@ -8,38 +8,53 @@
 import SwiftUI
 
 struct WomenCategorySelectorView: View {
-    @State private var selectedMain: String = "Dámské Oblečení"
-    @State private var selectedSub: String?
+    @ObservedObject var viewModel: ProductsViewModel
 
-    let mainCategories = ["Dámské Oblečení", "Dámské Plavky", "Doplňky"]
+    let mainCategories: [String] = [
+        "Dámské Oblečení",
+        "Dámské Plavky",
+        "Doplňky"
+    ]
 
     let subcategories: [String: [String]] = [
         "Dámské Oblečení": [
-            "Vše", "Šaty", "Dámská Trička", "Dámské Kardigany",
-            "Sukně", "Mikiny", "Kalhoty", "Trenčkoty"
+            "Šaty",
+            "Dámská Trička",
+            "Kabát",        // Treated as standalone subcategory now
+            "Kalhoty",
+            "Mikiny",
+            "Sukně"
         ],
         "Dámské Plavky": [
-            "Vše", "Jednodílné"
+            "Jednodílné",
+            "Horní díl",
+            "Spodní díl"
         ],
         "Doplňky": [
-            "Vše", "Tašky", "Náhrdelníky", "Náramky", "Náušnice"
+            "Náhrdelníky",
+            "Náramky",
+            "Náušnice",
+            "Pásky",
+            "Prstýnky",
+            "Tašky"
         ]
     ]
 
+
     var body: some View {
         VStack(alignment: .leading) {
-            // Top category tabs
+            // Main categories
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 20) {
                     ForEach(mainCategories, id: \.self) { category in
                         Button(action: {
-                            selectedMain = category
-                            selectedSub = nil
+                            viewModel.selectedMainCategory = category
+                            viewModel.getProducts()
                         }) {
                             Text(category)
-                                .fontWeight(selectedMain == category ? .bold : .regular)
-                                .foregroundColor(selectedMain == category ? .black : .gray)
-                                .underline(selectedMain == category, color: .black)
+                                .fontWeight(viewModel.selectedMainCategory == category ? .bold : .regular)
+                                .foregroundColor(viewModel.selectedMainCategory == category ? .black : .gray)
+                                .underline(viewModel.selectedMainCategory == category, color: .black)
                         }
                     }
                 }
@@ -49,20 +64,19 @@ struct WomenCategorySelectorView: View {
 
             Divider().padding(.bottom, 4)
 
-            // Subcategories slider
-            if let subs = subcategories[selectedMain] {
+            // Subcategories
+            if let subs = subcategories[viewModel.selectedMainCategory] {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
                         ForEach(subs, id: \.self) { sub in
                             Button(action: {
-                                selectedSub = sub
-                                // You can trigger product filtering here
+                                viewModel.filterProducts(for: sub == "Vše" ? nil : sub)
                             }) {
                                 Text(sub)
                                     .padding(.horizontal, 14)
                                     .padding(.vertical, 8)
-                                    .background(selectedSub == sub ? Color.black : Color.gray.opacity(0.2))
-                                    .foregroundColor(selectedSub == sub ? .white : .black)
+                                    .background(viewModel.selectedSubcategory == sub ? Color.black : Color.gray.opacity(0.2))
+                                    .foregroundColor(viewModel.selectedSubcategory == sub ? .white : .black)
                                     .cornerRadius(20)
                             }
                         }
@@ -71,15 +85,6 @@ struct WomenCategorySelectorView: View {
                 }
                 .padding(.bottom, 8)
             }
-
-            Spacer()
-
-            // Optional output
-            if let selectedSub {
-                Text("Selected: \(selectedMain) > \(selectedSub)")
-                    .padding()
-            }
         }
-        .navigationTitle("Categories")
     }
 }

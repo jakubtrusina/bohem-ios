@@ -1,0 +1,7 @@
+
+module UnrealBridge [system] {
+  requires cplusplus
+  header "UnrealLauncher.hpp"   // ✅ must match exact filename and case
+  export *
+}
+

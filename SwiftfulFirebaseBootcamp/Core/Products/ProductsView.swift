@@ -1,55 +1,105 @@
 import SwiftUI
+import FirebaseFirestore
+import FirebaseFirestoreSwift
 
 struct ProductsView: View {
     @StateObject private var viewModel = ProductsViewModel()
-    @State private var favoriteProductIds: Set<Int> = []
+    @State private var favoriteProductIds: Set<String> = []
     @State private var selectedProduct: Product? = nil
     @State private var isShowingDetail = false
-    @State private var cartAddedProductId: Int? = nil
-    @State private var favoriteAddedProductId: Int? = nil
-    
-    let mainCategories = ["Dámské Oblečení", "Dámské Plavky", "Doplňky"]
-    let subcategories: [String: [String]] = [
-        "Dámské Oblečení": ["Vše", "Šaty", "Dámská Trička", "Dámské Kardigany", "Sukně", "Mikiny", "Kalhoty", "Trenčkoty"],
-        "Dámské Plavky": ["Vše", "Jednodílné"],
-        "Doplňky": ["Vše", "Tašky", "Náhrdelníky", "Náramky", "Náušnice"]
+    @State private var cartAddedProductId: String? = nil
+    @State private var favoriteAddedProductId: String? = nil
+    @State private var didLoad = false
+    @State private var isShowingFilters = false
+
+    let mainCategories: [String] = [
+        "Dámské Oblečení",
+        "Dámské Plavky",
+        "Doplňky"
     ]
-    
+
+    let subcategories: [String: [String]] = [
+        "Dámské Oblečení": [
+            "Šaty",
+            "Dámská Trička",
+            "Kabát",        // Treated as standalone subcategory now
+            "Kalhoty",
+            "Mikiny",
+            "Sukně"
+        ],
+        "Dámské Plavky": [
+            "Jednodílné",
+            "Horní díl",
+            "Spodní díl"
+        ],
+        "Doplňky": [
+            "Náhrdelníky",
+            "Náramky",
+            "Náušnice",
+            "Pásky",
+            "Prstýnky",
+            "Tašky"
+        ]
+    ]
+
+
     var body: some View {
         VStack(spacing: 0) {
-            
-            // MARK: - Top Category Bar
+            HStack {
+                Text("Produkty")
+                    .font(.largeTitle.bold())
+                    .padding(.leading)
+                Spacer()
+                if viewModel.selectedFilter != nil || viewModel.selectedSubcategory != nil || !viewModel.selectedColors.isEmpty || !viewModel.selectedSizes.isEmpty || !viewModel.selectedBrands.isEmpty || viewModel.selectedPriceRange != nil || viewModel.showNewArrivalsOnly {
+                    Button("Reset") {
+                        viewModel.resetFilters()
+                    }
+                    .foregroundColor(.red)
+                    .padding(.trailing, 4)
+                }
+                Button(action: {
+                    isShowingFilters = true
+                }) {
+                    Image(systemName: "slider.horizontal.3")
+                        .foregroundColor(.black)
+                }
+                .padding(.trailing)
+            }
+            .padding(.top)
+
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 20) {
                     ForEach(mainCategories, id: \.self) { main in
-                        Button {
+                        let isSelected = viewModel.selectedMainCategory == main
+                        Button(action: {
                             viewModel.selectedMainCategory = main
-                            viewModel.filterProducts(for: nil)
-                        } label: {
+                            viewModel.selectedSubcategory = nil
+                            viewModel.getProducts()
+                        }) {
                             Text(main)
-                                .fontWeight(viewModel.selectedMainCategory == main ? .bold : .regular)
-                                .foregroundColor(viewModel.selectedMainCategory == main ? .black : .gray)
-                                .underline(viewModel.selectedMainCategory == main, color: .black)
+                                .fontWeight(isSelected ? .bold : .regular)
+                                .foregroundColor(isSelected ? .black : .gray)
+                                .underline(isSelected, color: .black)
                         }
                     }
                 }
                 .padding(.horizontal)
                 .padding(.top, 8)
             }
-            
-            // MARK: - Subcategory Bar
+
             if let subList = subcategories[viewModel.selectedMainCategory] {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
                         ForEach(subList, id: \.self) { sub in
-                            Button {
+                            let isSelected = viewModel.selectedSubcategory == sub
+                            Button(action: {
                                 viewModel.filterProducts(for: sub == "Vše" ? nil : sub)
-                            } label: {
+                            }) {
                                 Text(sub)
                                     .padding(.horizontal, 14)
                                     .padding(.vertical, 8)
-                                    .background(viewModel.selectedSubcategory == sub ? Color.black : Color.gray.opacity(0.2))
-                                    .foregroundColor(viewModel.selectedSubcategory == sub ? .white : .black)
+                                    .background(isSelected ? Color.black : Color.gray.opacity(0.2))
+                                    .foregroundColor(isSelected ? .white : .black)
                                     .cornerRadius(20)
                             }
                         }
@@ -58,52 +108,127 @@ struct ProductsView: View {
                 }
                 .padding(.bottom, 8)
             }
-            
-            // MARK: - Products
+
             ScrollView {
                 LazyVStack(spacing: 24) {
-                    ForEach(viewModel.filteredProducts) { product in
-                        buildProductCard(for: product)
-                        
-                        if product == viewModel.filteredProducts.last {
-                            ProgressView()
-                                .padding()
-                                .onAppear {
-                                    viewModel.getProducts()
-                                }
-                        }
-                    }
+                    productList()
                 }
                 .padding()
             }
         }
         .background(Color(.systemGroupedBackground))
-        .navigationTitle("Products")
-        .toolbar { buildToolbar() }
         .onAppear {
-            let screenName = String(describing: Self.self)
+            guard !didLoad else { return }
+            didLoad = true
 
-            AnalyticsManager.shared.logEvent(.screenView, params: [
-                "screen_name": screenName
-            ])
+            let screenName = String(describing: Self.self)
+            AnalyticsManager.shared.logEvent(.screenView, params: ["screen_name": screenName])
 
             viewModel.getProducts()
             viewModel.loadFavoriteProductIds()
             favoriteProductIds = viewModel.favoriteProductIds
         }
-
         .navigationDestination(isPresented: $isShowingDetail) {
             if let product = selectedProduct {
-                SingleProductView(product: product)
+                SingleProductView(productId: product.id)
+            }
+        }
+        .sheet(isPresented: $isShowingFilters) {
+            NavigationStack {
+                VStack(spacing: 0) {
+                    ScrollView {
+                        ProductFiltersView(viewModel: viewModel)
+
+                        Divider().padding(.vertical)
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Řazení podle ceny")
+                                .font(.headline)
+                                .padding(.horizontal)
+
+                            ForEach(ProductsViewModel.FilterOption.allCases, id: \.self) { option in
+                                Button(action: {
+                                    Task {
+                                        try? await viewModel.filterSelected(option: option)
+                                    }
+                                }) {
+                                    HStack {
+                                        Text(option.rawValue.capitalized)
+                                        if viewModel.selectedFilter == option {
+                                            Spacer()
+                                            Image(systemName: "checkmark")
+                                                .foregroundColor(.black)
+                                        }
+                                    }
+                                    .padding(.horizontal)
+                                    .padding(.vertical, 6)
+                                }
+                            }
+                        }
+                        .padding(.top)
+                    }
+
+                    Divider()
+
+                    Button(role: .destructive) {
+                        viewModel.resetFilters()
+                        isShowingFilters = false
+                    } label: {
+                        Text("Resetovat filtry")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.red.opacity(0.1))
+                            .cornerRadius(12)
+                            .padding()
+                    }
+                }
+                .navigationTitle("Filtry")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Zavřít") {
+                            isShowingFilters = false
+                        }
+                    }
+                }
+            }
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+        }
+    }
+
+    @ViewBuilder
+    private func productList() -> some View {
+        if viewModel.filteredProducts.isEmpty {
+            Text("No products found.")
+                .font(.headline)
+                .foregroundColor(.gray)
+                .padding(.top, 40)
+        } else {
+            ForEach(viewModel.filteredProducts) { product in
+                buildProductCard(for: product)
+
+                if product == viewModel.filteredProducts.last {
+                    ProgressView()
+                        .padding()
+                        .onAppear {
+                            if viewModel.lastDocument != nil {
+                                viewModel.getProducts()
+                            }
+                        }
+                }
             }
         }
     }
-    
+
     private func buildProductCard(for product: Product) -> some View {
-        OverlayProductCardView(
+        let id = product.id
+
+        return OverlayProductCardView(
             product: product,
-            isFavorited: favoriteProductIds.contains(product.id),
-            isCartAdded: cartAddedProductId == product.id,
+            isFavorited: favoriteProductIds.contains(id),
+            isCartAdded: cartAddedProductId == id,
             onTap: {
                 selectedProduct = product
                 isShowingDetail = true
@@ -111,11 +236,11 @@ struct ProductsView: View {
             onToggleFavorite: {
                 Task {
                     favoriteProductIds = await viewModel.toggleFavoriteProduct(
-                        productId: product.id,
+                        productId: id,
                         currentFavorites: favoriteProductIds
                     )
                     withAnimation {
-                        favoriteAddedProductId = product.id
+                        favoriteAddedProductId = id
                     }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                         favoriteAddedProductId = nil
@@ -126,7 +251,7 @@ struct ProductsView: View {
                 Task {
                     await CartManager.shared.addToCart(product: product, size: "M", quantity: 1)
                     withAnimation {
-                        cartAddedProductId = product.id
+                        cartAddedProductId = id
                     }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                         cartAddedProductId = nil
@@ -134,47 +259,5 @@ struct ProductsView: View {
                 }
             }
         )
-    }
-    
-    func uploadLocalJSONToFirestore() {
-        guard let url = Bundle.main.url(forResource: "firestore_products_fixed", withExtension: "json") else {
-            print("❌ Could not find local JSON file.")
-            return
-        }
-
-        do {
-            let data = try Data(contentsOf: url)
-            let decoded = try JSONDecoder().decode([String: Product].self, from: data)
-
-            Task {
-                for (_, product) in decoded {
-                    do {
-                        try await ProductsManager.shared.uploadProduct(product: product)
-                        print("✅ Uploaded: \(product.title ?? "")")
-                    } catch {
-                        print("❌ Failed to upload \(product.title ?? ""): \(error)")
-                    }
-                }
-            }
-        } catch {
-            print("❌ Error loading JSON: \(error)")
-        }
-    }
-
-
-    
-    @ToolbarContentBuilder
-    private func buildToolbar() -> some ToolbarContent {
-        ToolbarItem(placement: .navigationBarLeading) {
-            Menu("Filter: \(viewModel.selectedFilter?.rawValue ?? "NONE")") {
-                ForEach(ProductsViewModel.FilterOption.allCases, id: \.self) { option in
-                    Button(option.rawValue) {
-                        Task {
-                            try? await viewModel.filterSelected(option: option)
-                        }
-                    }
-                }
-            }
-        }
     }
 }

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SplashView: View {
     @State private var isActive = false
+    @StateObject private var viewModel = ProductsViewModel()
 
     var body: some View {
         ZStack {
@@ -27,11 +28,13 @@ struct SplashView: View {
             }
         }
         .onAppear {
+            ProductsViewModel.shared.getProducts()
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                 withAnimation(.easeInOut(duration: 0.3)) {
                     isActive = true
                 }
             }
         }
+
     }
 }

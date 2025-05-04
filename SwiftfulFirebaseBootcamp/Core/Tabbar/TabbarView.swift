@@ -12,7 +12,9 @@ struct TabbarView: View {
     @Binding var showSignInView: Bool
     
     var body: some View {
+//        UnrealView()
         MainTryOnView(showSignInView: $showSignInView)
+//        PerformanceView()
     }
     
     
@@ -23,7 +25,7 @@ struct TabbarView: View {
 //            }
 //            .tabItem {
 //                Image(systemName: "cart")
-//                Text("Products")
+//                Text("menu_products")
 //            }
 //            
 //            NavigationStack {

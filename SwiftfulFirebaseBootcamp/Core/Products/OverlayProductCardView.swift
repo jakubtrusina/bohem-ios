@@ -1,4 +1,6 @@
 import SwiftUI
+import Kingfisher
+
 
 struct OverlayProductCardView: View {
     let product: Product
@@ -14,26 +16,22 @@ struct OverlayProductCardView: View {
                 // Product image or fallback
                 if let urlString = product.thumbnail,
                    let url = URL(string: urlString) {
-                    AsyncImage(url: url) { image in
-                        image
-                            .resizable()
-                            .scaledToFit()
-                            .frame(maxWidth: .infinity)
-                            .onTapGesture {
-                                AnalyticsManager.shared.logAddToFavorites(product: product)
-                                onTap()
-                            }
-                    } placeholder: {
-                        Color.gray.opacity(0.2)
-                            .aspectRatio(1, contentMode: .fit)
-                    }
+                    KFImage(url)
+                        .resizable()
+                        .cancelOnDisappear(true)
+                        .fade(duration: 0.25)
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity)
+                        .onTapGesture {
+                            AnalyticsManager.shared.logAddToFavorites(product: product)
+                            onTap()
+                        }
                 } else {
                     Color.gray.opacity(0.2)
                         .aspectRatio(1, contentMode: .fit)
                         .overlay(Text("No image").foregroundColor(.white))
                 }
 
-                // Product details overlay
                 VStack(alignment: .leading, spacing: 4) {
                     Text(product.title ?? "Unnamed")
                         .font(.body)
@@ -52,6 +50,7 @@ struct OverlayProductCardView: View {
                     }
                 }
                 .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .background(
                     LinearGradient(
                         gradient: Gradient(colors: [Color.black.opacity(0.6), Color.clear]),
@@ -59,6 +58,7 @@ struct OverlayProductCardView: View {
                         endPoint: .top
                     )
                 )
+
             }
 
             // ❤️ Favorite button

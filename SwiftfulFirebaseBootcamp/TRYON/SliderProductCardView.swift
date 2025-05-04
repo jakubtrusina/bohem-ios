@@ -1,4 +1,5 @@
 import SwiftUI
+import Kingfisher
 
 struct SliderProductCardView: View {
     let product: Product
@@ -12,17 +13,13 @@ struct SliderProductCardView: View {
         ZStack(alignment: .topTrailing) {
             ZStack(alignment: .bottomLeading) {
                 // 🖼 Product Image
-                AsyncImage(url: URL(string: product.thumbnail ?? "")) { image in
-                    image
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 160, height: 220)
-                        .clipped()
-                } placeholder: {
-                    Color.gray.opacity(0.2)
-                        .frame(width: 160, height: 220)
-                        .cornerRadius(14)
-                }
+                KFImage(URL(string: product.thumbnail ?? ""))
+                    .resizable()
+                    .cancelOnDisappear(true)
+                    .fade(duration: 0.25)
+                    .scaledToFill()
+                    .frame(width: 160, height: 220)
+                    .clipped()
 
                 // 📝 Info Overlay
                 VStack(alignment: .leading, spacing: 4) {
@@ -43,6 +40,7 @@ struct SliderProductCardView: View {
                             .foregroundColor(.white)
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(10)
                 .background(
                     LinearGradient(
@@ -51,6 +49,7 @@ struct SliderProductCardView: View {
                         endPoint: .top
                     )
                 )
+
             }
 
             // ❤️ Favorite Button

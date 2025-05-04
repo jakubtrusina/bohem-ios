@@ -10,7 +10,7 @@ import SwiftUI
 /// Horizontal category tab used in Try-On product slider
 struct TryOnMainCategorySelector: View {
     let categories: [String]
-    let selectedCategory: String
+    @Binding var selectedCategory: String
     let onSelect: (String) -> Void
 
     var body: some View {

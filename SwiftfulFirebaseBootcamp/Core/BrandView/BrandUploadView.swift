@@ -4,15 +4,32 @@ struct BrandUploadView: View {
     @State private var name = ""
     @State private var description = ""
     @State private var logoUrl = ""
+    @State private var bannerUrl = ""
+    @State private var story = ""
+    @State private var instagram = ""
+    @State private var website = ""
+    @State private var email = ""
     @State private var successMessage: String?
 
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("Brand Info")) {
-                    TextField("Name", text: $name)
+                Section(header: Text("Basic Info")) {
+                    TextField("Brand Name", text: $name)
                     TextField("Description", text: $description)
-                    TextField("Logo URL (optional)", text: $logoUrl)
+                    TextField("Logo URL", text: $logoUrl)
+                    TextField("Banner URL", text: $bannerUrl)
+                }
+
+                Section(header: Text("Story")) {
+                    TextEditor(text: $story)
+                        .frame(minHeight: 80)
+                }
+
+                Section(header: Text("Contact & Social")) {
+                    TextField("Instagram Handle (no @)", text: $instagram)
+                    TextField("Website", text: $website)
+                    TextField("Email", text: $email)
                 }
 
                 Button("Upload to Firestore") {
@@ -21,7 +38,12 @@ struct BrandUploadView: View {
                             id: nil,
                             name: name,
                             description: description,
-                            logoUrl: logoUrl.isEmpty ? nil : logoUrl
+                            logoUrl: logoUrl.isEmpty ? nil : logoUrl,
+                            bannerUrl: bannerUrl.isEmpty ? nil : bannerUrl,
+                            story: story.isEmpty ? nil : story,
+                            instagram: instagram.isEmpty ? nil : instagram,
+                            website: website.isEmpty ? nil : website,
+                            email: email.isEmpty ? nil : email
                         )
 
                         do {
@@ -38,7 +60,7 @@ struct BrandUploadView: View {
                         .foregroundColor(successMessage.contains("✅") ? .green : .red)
                 }
             }
-            .navigationTitle("Add Brand")
+            .navigationTitle("Add / Edit Brand")
         }
     }
 }

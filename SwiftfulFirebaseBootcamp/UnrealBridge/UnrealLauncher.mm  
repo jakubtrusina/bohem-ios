@@ -1,0 +1,6 @@
+#import "UnrealLauncher.hpp"
+#import <UIKit/UIKit.h>                        // ✅ Required for UIViewController
+
+UIViewController* CreateUnrealViewController() {
+    return [UIViewController new];            // ✅ Simple placeholder
+}

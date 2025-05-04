@@ -1,5 +1,7 @@
 import SwiftUI
 import PhotosUI
+import Kingfisher
+
 
 struct ProfileView: View {
     @StateObject private var viewModel = ProfileViewModel()
@@ -21,17 +23,15 @@ struct ProfileView: View {
                             Group {
                                 if let urlString = user.profileImagePathUrl,
                                    let url = URL(string: urlString) {
-                                    AsyncImage(url: url) { image in
-                                        image
-                                            .resizable()
-                                            .scaledToFill()
-                                            .frame(width: 120, height: 120)
-                                            .clipShape(Circle())
-                                            .shadow(radius: 6)
-                                    } placeholder: {
-                                        ProgressView()
-                                            .frame(width: 120, height: 120)
-                                    }
+                                    KFImage(url)
+                                        .resizable()
+                                        .cancelOnDisappear(true)
+                                        .fade(duration: 0.25)
+                                        .scaledToFill()
+                                        .frame(width: 120, height: 120)
+                                        .clipShape(Circle())
+                                        .shadow(radius: 6)
+
                                 } else {
                                     ZStack {
                                         Circle()
@@ -48,7 +48,8 @@ struct ProfileView: View {
                         }
                         .buttonStyle(.plain)
 
-                        Text(viewModel.name.isEmpty ? "Your Name" : viewModel.name)
+                        let displayName = viewModel.name.isEmpty ? NSLocalizedString("your_name", comment: "") : viewModel.name
+                        Text(displayName)
                             .font(.title2)
                             .fontWeight(.semibold)
 
@@ -61,24 +62,24 @@ struct ProfileView: View {
                     .padding(.bottom, 8)
 
                     // MARK: - Personal Info
-                    ProfileSectionCard(title: "Personal Info") {
+                    ProfileSectionCard(title: NSLocalizedString("personal_info", comment: "")) {
                         VStack(alignment: .leading, spacing: 16) {
-                            Text("Name").font(.caption).foregroundColor(.gray)
-                            TextField("Enter your full name", text: $viewModel.name)
+                            Text(NSLocalizedString("name_label", comment: "")).font(.caption).foregroundColor(.gray)
+                            TextField(NSLocalizedString("name_placeholder", comment: ""), text: $viewModel.name)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                                 .submitLabel(.done)
                                 .onSubmit { viewModel.updateUserInfo() }
                                 .onChange(of: viewModel.name) { _ in viewModel.updateUserInfo() }
 
-                            Text("Gender").font(.caption).foregroundColor(.gray)
+                            Text(NSLocalizedString("gender_label", comment: "")).font(.caption).foregroundColor(.gray)
                             Picker("", selection: $viewModel.gender) {
-                                ForEach(["", "Male", "Female", "Non-binary", "Other"], id: \.self) { Text($0) }
+                                ForEach(["", "Male", "Female", "Non-binary", "Other"], id: \ .self) { Text($0) }
                             }
                             .pickerStyle(SegmentedPickerStyle())
                             .onChange(of: viewModel.gender) { _ in viewModel.updateUserInfo() }
 
-                            Text("Age").font(.caption).foregroundColor(.gray)
-                            TextField("Enter your age", value: $viewModel.age, format: .number)
+                            Text(NSLocalizedString("age_label", comment: "")).font(.caption).foregroundColor(.gray)
+                            TextField(NSLocalizedString("age_placeholder", comment: ""), value: $viewModel.age, format: .number)
                                 .keyboardType(.numberPad)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                                 .submitLabel(.done)
@@ -88,18 +89,18 @@ struct ProfileView: View {
                     }
 
                     // MARK: - Measurements
-                    ProfileSectionCard(title: "Body Measurements") {
+                    ProfileSectionCard(title: NSLocalizedString("measurements_title", comment: "")) {
                         VStack(alignment: .leading, spacing: 16) {
-                            Text("Height (cm)").font(.caption).foregroundColor(.gray)
-                            TextField("Enter height", value: $viewModel.height, format: .number)
+                            Text(NSLocalizedString("height_label", comment: "")).font(.caption).foregroundColor(.gray)
+                            TextField(NSLocalizedString("height_placeholder", comment: ""), value: $viewModel.height, format: .number)
                                 .keyboardType(.decimalPad)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                                 .submitLabel(.done)
                                 .onSubmit { viewModel.updateUserInfo() }
                                 .onChange(of: viewModel.height) { _ in viewModel.updateUserInfo() }
 
-                            Text("Weight (kg)").font(.caption).foregroundColor(.gray)
-                            TextField("Enter weight", value: $viewModel.weight, format: .number)
+                            Text(NSLocalizedString("weight_label", comment: "")).font(.caption).foregroundColor(.gray)
+                            TextField(NSLocalizedString("weight_placeholder", comment: ""), value: $viewModel.weight, format: .number)
                                 .keyboardType(.decimalPad)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                                 .submitLabel(.done)
@@ -109,31 +110,31 @@ struct ProfileView: View {
                     }
 
                     // MARK: - Fit & Size
-                    ProfileSectionCard(title: "Fit & Size") {
+                    ProfileSectionCard(title: NSLocalizedString("fit_size_title", comment: "")) {
                         VStack(alignment: .leading, spacing: 16) {
-                            Text("Top Size").font(.caption).foregroundColor(.gray)
-                            Picker("Top Size", selection: $viewModel.clothingSizeTop) {
-                                ForEach(["", "XS", "S", "M", "L", "XL", "2XL"], id: \.self) { Text($0) }
+                            Text(NSLocalizedString("top_size", comment: "")).font(.caption).foregroundColor(.gray)
+                            Picker(NSLocalizedString("top_size", comment: ""), selection: $viewModel.clothingSizeTop) {
+                                ForEach(["", "XS", "S", "M", "L", "XL", "2XL"], id: \ .self) { Text($0) }
                             }
                             .pickerStyle(MenuPickerStyle())
                             .onChange(of: viewModel.clothingSizeTop) { _ in viewModel.updateUserInfo() }
 
-                            Text("Bottom Size").font(.caption).foregroundColor(.gray)
-                            Picker("Bottom Size", selection: $viewModel.clothingSizeBottom) {
-                                ForEach(["", "XS", "S", "M", "L", "XL"], id: \.self) { Text($0) }
+                            Text(NSLocalizedString("bottom_size", comment: "")).font(.caption).foregroundColor(.gray)
+                            Picker(NSLocalizedString("bottom_size", comment: ""), selection: $viewModel.clothingSizeBottom) {
+                                ForEach(["", "XS", "S", "M", "L", "XL"], id: \ .self) { Text($0) }
                             }
                             .pickerStyle(MenuPickerStyle())
                             .onChange(of: viewModel.clothingSizeBottom) { _ in viewModel.updateUserInfo() }
 
-                            Text("Fit Preference").font(.caption).foregroundColor(.gray)
-                            Picker("Fit Preference", selection: $viewModel.fitPreference) {
-                                ForEach(["", "Tight", "Regular", "Loose"], id: \.self) { Text($0) }
+                            Text(NSLocalizedString("fit_preference", comment: "")).font(.caption).foregroundColor(.gray)
+                            Picker(NSLocalizedString("fit_preference", comment: ""), selection: $viewModel.fitPreference) {
+                                ForEach(["", "Tight", "Regular", "Loose"], id: \ .self) { Text($0) }
                             }
                             .pickerStyle(SegmentedPickerStyle())
                             .onChange(of: viewModel.fitPreference) { _ in viewModel.updateUserInfo() }
 
                             NavigationLink(destination: SizeGuideView()) {
-                                Text("📏 View Size Guide")
+                                Text(NSLocalizedString("view_size_guide", comment: ""))
                                     .font(.subheadline)
                                     .padding(.vertical, 10)
                                     .frame(maxWidth: .infinity)
@@ -152,7 +153,7 @@ struct ProfileView: View {
                             )
                         )
                     ) {
-                        Text("📅 Book In-Store Consultation")
+                        Text(NSLocalizedString("book_consultation", comment: ""))
                             .font(.headline)
                             .frame(maxWidth: .infinity)
                             .padding()
@@ -163,7 +164,7 @@ struct ProfileView: View {
                     .padding(.top)
 
                 } else {
-                    ProgressView("Loading profile...")
+                    ProgressView(NSLocalizedString("loading_profile", comment: ""))
                         .padding(.top, 50)
                 }
             }
@@ -171,7 +172,7 @@ struct ProfileView: View {
             .padding(.top)
         }
         .background(Color(.systemGroupedBackground))
-        .navigationTitle("Profile")
+        .navigationTitle(Text("menu_profile"))
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             if viewModel.user == nil {
@@ -185,7 +186,6 @@ struct ProfileView: View {
                 "screen_name": screenName
             ])
         }
-
         .onTapGesture {
             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         }
@@ -260,18 +260,5 @@ struct ProfileSectionCard<Content: View>: View {
             .shadow(color: .black.opacity(0.04), radius: 10, x: 0, y: 5)
         }
         .padding(.horizontal, -4)
-    }
-}
-
-struct AlertMessage: Identifiable {
-    let id = UUID()
-    let text: String
-}
-
-extension View {
-    func hideKeyboardOnTap() -> some View {
-        self.onTapGesture {
-            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-        }
     }
 }

@@ -1,98 +1,147 @@
 import SwiftUI
-import FirebaseFirestore
-import FirebaseFirestoreSwift
+import Kingfisher
 
 struct BrandView: View {
-    let brandName: String
-    @State private var brand: Brand?
-    @State private var products: [Product] = []
-    @State private var isLoading = true
+    let brand: Brand?
+    let vm = ProductsViewModel.shared
 
     var body: some View {
         ScrollView {
-            if isLoading {
-                ProgressView("Loading brand info...")
-                    .padding(.top, 40)
-            } else if let brand = brand {
-                VStack(spacing: 16) {
-                    if let logoUrl = brand.logoUrl, let url = URL(string: logoUrl) {
-                        AsyncImage(url: url) { image in
-                            image.resizable()
-                                .scaledToFit()
-                                .frame(height: 60)
-                        } placeholder: {
-                            ProgressView()
-                        }
-                    }
-
-                    Text(brand.name)
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-
-                    Text(brand.description ?? "No description available.")
-                        .font(.body)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                }
-                .padding(.top)
-
-                // Brand Products
-                LazyVStack(spacing: 24) {
-                    ForEach(products, id: \.id) { product in
-                        OverlayProductCardView(
-                            product: product,
-                            isFavorited: false,
-                            isCartAdded: false,
-                            onTap: {},
-                            onToggleFavorite: {},
-                            onAddToCart: {}
-                        )
-                    }
-                }
-                .padding()
-            } else {
-                Text("⚠️ Brand not found.")
-                    .padding()
-                    .foregroundColor(.secondary)
+            VStack(spacing: 16) {
+                bannerSection()
+                brandInfoSection()
+                productGridSection()
             }
         }
-        .navigationTitle(brand?.name ?? brandName)
+        .navigationTitle(brand?.name ?? "")
         .navigationBarTitleDisplayMode(.inline)
-        .task {
-            await load()
-        }
-    }
-
-    private func load() async {
-        isLoading = true
-        await loadBrand()
-        await loadProducts()
-        isLoading = false
-    }
-
-    private func loadBrand() async {
-        print("🔍 Looking for brand named: \(brandName)")
-        do {
-            brand = try await BrandManager.shared.getBrandByName(brandName)
-            if let brand = brand {
-                print("✅ Brand loaded: \(brand.name)")
-            } else {
-                print("❌ Brand not found for: \(brandName)")
+        .onAppear {
+            if vm.allProducts.isEmpty {
+                vm.getProducts()
             }
-        } catch {
-            print("🔥 Failed to load brand: \(error.localizedDescription)")
+        }
+        .background(Color(.systemGroupedBackground).ignoresSafeArea())
+    }
+
+    @ViewBuilder
+    private func bannerSection() -> some View {
+        ZStack(alignment: .bottom) {
+            if let bannerUrl = brand?.bannerUrl, let banner = URL(string: bannerUrl) {
+                KFImage(banner)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(height: 220)
+                    .clipped()
+            } else {
+                Rectangle().fill(Color.gray.opacity(0.3)).frame(height: 220)
+            }
+
+            brandLogoView()
+        }
+        .padding(.bottom, 60)
+    }
+
+    @ViewBuilder
+    private func brandLogoView() -> some View {
+        if let logoUrl = brand?.logoUrl, let logo = URL(string: logoUrl) {
+            KFImage(logo)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 100, height: 100)
+                .background(Color.white)
+                .clipShape(Circle())
+                .overlay(Circle().stroke(Color.white, lineWidth: 4))
+                .shadow(radius: 4)
+                .offset(y: 50)
         }
     }
 
-    private func loadProducts() async {
-        do {
-            let snapshot = try await Firestore.firestore()
-                .collection("products")
-                .whereField("brand", isEqualTo: brandName)
-                .getDocuments()
-            products = snapshot.documents.compactMap { try? $0.data(as: Product.self) }
-        } catch {
-            print("🔥 Failed to load products for brand: \(error.localizedDescription)")
+    @ViewBuilder
+    private func brandInfoSection() -> some View {
+        VStack(spacing: 10) {
+            Text(brand?.name ?? "Brand")
+                .font(.system(size: 28, weight: .bold))
+                .multilineTextAlignment(.center)
+
+            if let description = brand?.description {
+                Text(description)
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+            }
+
+            HStack(spacing: 20) {
+                if let website = brand?.website, let websiteUrl = URL(string: website) {
+                    Link(destination: websiteUrl) {
+                        Image(systemName: "globe")
+                    }
+                }
+
+                if let instagram = brand?.instagram, let ig = URL(string: instagram) {
+                    Link(destination: ig) {
+                        Image(systemName: "camera")
+                            .foregroundColor(.pink)
+                    }
+                }
+
+                if let email = brand?.email {
+                    Link(destination: URL(string: "mailto:\(email)")!) {
+                        Image(systemName: "envelope")
+                            .foregroundColor(.gray)
+                    }
+                }
+            }
+            .font(.title3)
         }
+    }
+
+    @ViewBuilder
+    private func productGridSection() -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Produkty")
+                .font(.title2)
+                .fontWeight(.semibold)
+                .padding(.horizontal)
+
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
+                ForEach(getFilteredProducts()) { product in
+                    NavigationLink(destination: SingleProductView(productId: product.id)) {
+                        VStack(spacing: 8) {
+                            if let thumb = product.thumbnail, let url = URL(string: thumb) {
+                                KFImage(url)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(height: 160)
+                                    .clipped()
+                                    .cornerRadius(8)
+                            }
+
+                            Text(product.title ?? "")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .multilineTextAlignment(.center)
+                                .foregroundColor(.primary)
+
+                            if let price = product.price {
+                                Text("\(price) CZK")
+                                    .font(.footnote)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .padding(8)
+                        .background(Color(.systemBackground))
+                        .cornerRadius(12)
+                        .shadow(radius: 2)
+                    }
+                }
+            }
+            .padding(.horizontal)
+        }
+    }
+
+    private func getFilteredProducts() -> [Product] {
+        guard let brandName = brand?.name else { return [] }
+        return vm.allProducts.filter { $0.brand == brandName }
     }
 }

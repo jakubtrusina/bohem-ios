@@ -1,0 +1,32 @@
+/* 
+  Localizable.strings
+  SwiftfulFirebaseBootcamp
+
+  Created by Jakub Trusina on 4/30/25.
+  
+*/
+tryon_message = "We’re preparing a revolutionary 3D virtual try-on experience.";
+menu_cart = "Cart";
+menu_favorites = "Favorites";
+menu_bag = "Bag";
+menu_profile = "Profile";
+menu_products = "Products";
+your_name = "Your Name";
+loading_profile = "Loading profile...";
+personal_info = "Personal Info";
+name_label = "Name";
+name_placeholder = "Enter your full name";
+gender_label = "Gender";
+age_label = "Age";
+age_placeholder = "Enter your age";
+measurements_title = "Body Measurements";
+height_label = "Height (cm)";
+height_placeholder = "Enter height";
+weight_label = "Weight (kg)";
+weight_placeholder = "Enter weight";
+fit_size_title = "Fit & Size";
+top_size = "Top Size";
+bottom_size = "Bottom Size";
+fit_preference = "Fit Preference";
+view_size_guide = "📏 View Size Guide";
+book_consultation = "📅 Book In-Store Consultation";

@@ -3,9 +3,9 @@ import SwiftUI
 struct FavoriteView: View {
     @StateObject private var viewModel = FavoriteViewModel()
     @State private var selectedProduct: Product? = nil
-    @State private var cartProductIds: Set<Int> = []
-    @State private var favoriteProductIds: Set<Int> = []
-    @State private var cartAddedProductId: Int? = nil
+    @State private var cartProductIds: Set<String> = []
+    @State private var favoriteProductIds: Set<String> = []
+    @State private var cartAddedProductId: String? = nil
 
     var body: some View {
         NavigationStack {
@@ -15,34 +15,16 @@ struct FavoriteView: View {
                         OverlayProductCardView(
                             product: product,
                             isFavorited: true,
-                            isCartAdded: cartAddedProductId == product.id,
-                            onTap: {
-                                selectedProduct = product
-                            },
-                            onToggleFavorite: {
-                                if let match = viewModel.userFavoriteProducts.first(where: { $0.productId == product.id }) {
-                                    viewModel.removeFromFavorites(favoriteProductId: match.id)
-                                }
-                            },
-                            onAddToCart: {
-                                Task {
-                                    if let user = try? AuthenticationManager.shared.getAuthenticatedUser() {
-                                        await CartManager.shared.addToCart(product: product, size: "M", quantity: 1)
-                                        withAnimation {
-                                            cartAddedProductId = product.id
-                                        }
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                                            cartAddedProductId = nil
-                                        }
-                                    }
-                                }
-                            }
+                            isCartAdded: isCartAdded(product),
+                            onTap: { handleTap(product) },
+                            onToggleFavorite: { handleToggleFavorite(product) },
+                            onAddToCart: { handleAddToCart(product) }
                         )
                     }
                 }
                 .padding()
             }
-            .navigationTitle("Favorites")
+            .navigationTitle("menu_favorites")
             .onAppear {
                 viewModel.addListenerForFavorites()
                 viewModel.loadFavoriteProductIds()
@@ -52,10 +34,38 @@ struct FavoriteView: View {
                 }
             }
             .sheet(item: $selectedProduct) { product in
-                SingleProductView(product: product)
+                SingleProductView(productId: product.id)
+            }
+        }
+    }
+
+    // MARK: - Extracted Handlers
+
+    private func isCartAdded(_ product: Product) -> Bool {
+        return cartAddedProductId == product.id
+    }
+
+    private func handleTap(_ product: Product) {
+        selectedProduct = product
+    }
+
+    private func handleToggleFavorite(_ product: Product) {
+        if let match = viewModel.userFavoriteProducts.first(where: { $0.productId == product.id }) {
+            viewModel.removeFromFavorites(favoriteProductId: match.id)
+        }
+    }
+
+    private func handleAddToCart(_ product: Product) {
+        Task {
+            if let _ = try? AuthenticationManager.shared.getAuthenticatedUser() {
+                await CartManager.shared.addToCart(product: product, size: "M", quantity: 1)
+                withAnimation {
+                    cartAddedProductId = product.id
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    cartAddedProductId = nil
+                }
             }
         }
     }
 }
-
-// ✅ Move this to Product.swift or wherever Product is declared

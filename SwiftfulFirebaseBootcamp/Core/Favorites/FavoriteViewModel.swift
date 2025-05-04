@@ -1,20 +1,13 @@
-//
-//  FavoriteViewModel.swift
-//  SwiftfulFirebaseBootcamp
-//
-//  Created by Nick Sarno on 1/22/23.
-//
-
 import Foundation
 import SwiftUI
 import Combine
 
 @MainActor
 final class FavoriteViewModel: ObservableObject {
-    
+
     @Published private(set) var userFavoriteProducts: [UserFavoriteProduct] = []
     @Published var favoriteProducts: [Product] = []
-    @Published var favoriteProductIds: Set<Int> = []
+    @Published var favoriteProductIds: Set<String> = []
 
     private var cancellables = Set<AnyCancellable>()
 
@@ -30,27 +23,29 @@ final class FavoriteViewModel: ObservableObject {
             }
             .store(in: &cancellables)
     }
-    
+
     func loadFavoriteProductIds() {
         self.favoriteProductIds = Set(userFavoriteProducts.map { $0.productId })
     }
 
-    func toggleCartProduct(product: Product, currentCartIds: Set<Int>) async -> Set<Int> {
+    func toggleCartProduct(product: Product, currentCartIds: Set<String>) async -> Set<String> {
         guard let authDataResult = try? AuthenticationManager.shared.getAuthenticatedUser() else { return currentCartIds }
         var updated = currentCartIds
 
-        if updated.contains(product.id) {
-            try? await UserManager.shared.removeUserCartProduct(userId: authDataResult.uid, productId: product.id)
-            updated.remove(product.id)
-        } else {
-            try? await UserManager.shared.addUserCartProduct(userId: authDataResult.uid, product: product)
-            updated.insert(product.id)
+        await product.withValidID { id in
+            if updated.contains(id) {
+                try? await UserManager.shared.removeUserCartProduct(userId: authDataResult.uid, productId: id)
+                updated.remove(id)
+            } else {
+                try? await UserManager.shared.addUserCartProduct(userId: authDataResult.uid, product: product, size: "M", quantity: 1)
+
+            }
         }
 
         return updated
     }
 
-    func toggleFavoriteProduct(productId: Int, currentFavorites: Set<Int>) async -> Set<Int> {
+    func toggleFavoriteProduct(productId: String, currentFavorites: Set<String>) async -> Set<String> {
         guard let authDataResult = try? AuthenticationManager.shared.getAuthenticatedUser() else { return currentFavorites }
         var updated = currentFavorites
 
@@ -65,17 +60,17 @@ final class FavoriteViewModel: ObservableObject {
         return updated
     }
 
-    func loadCartProductIds() async -> Set<Int> {
+    func loadCartProductIds() async -> Set<String> {
         guard let authDataResult = try? AuthenticationManager.shared.getAuthenticatedUser() else { return [] }
         let cartProducts = try? await UserManager.shared.getAllUserCartProducts(userId: authDataResult.uid)
-        return Set(cartProducts?.map { $0.id } ?? [])
+        return Set(cartProducts?.compactMap { $0.id } ?? [])
     }
 
     private func loadProducts(favorites: [UserFavoriteProduct]) async {
         var loaded: [Product] = []
 
         for favorite in favorites {
-            if let product = try? await ProductsManager.shared.getProduct(productId: String(favorite.productId)) {
+            if let product = try? await ProductsManager.shared.getProduct(productId: favorite.productId) {
                 loaded.append(product)
             }
         }

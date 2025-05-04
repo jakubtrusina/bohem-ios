@@ -234,17 +234,81 @@ final class UserManager {
 
         try await userDocument(userId: userId).updateData(data)
     }
-    
-    func addUserCartProduct(userId: String, product: Product) async throws {
+    func addUserCartProduct(userId: String, product: Product, size: String, quantity: Int) async throws {
+        guard let productSize = product.sizes?.first(where: { $0.size == size }) else {
+            print("❌ Size \(size) not found for product \(product.id)")
+            return
+        }
+
+        let cartItem = CartItem(product: product, size: productSize, quantity: quantity)
+        let docId = "\(product.id)-\(size)"
+
         let document = Firestore.firestore()
             .collection("users")
             .document(userId)
             .collection("cart_products")
-            .document(String(product.id))
+            .document(docId)
 
-        let data = try Firestore.Encoder().encode(product)
+        let data = try Firestore.Encoder().encode(cartItem)
         try await document.setData(data, merge: false)
     }
+
+    func getFollowerCount(for brandName: String) async -> Int {
+        do {
+            let snapshot = try await Firestore.firestore()
+                .collectionGroup("followed_brands")
+                .whereField(FieldPath.documentID(), isEqualTo: brandName)
+                .getDocuments()
+
+            return snapshot.count
+        } catch {
+            print("❌ Failed to fetch follower count: \(error)")
+            return 0
+        }
+    }
+
+    
+    func followBrand(userId: String, brandName: String) async throws {
+        let ref = Firestore.firestore()
+            .collection("users")
+            .document(userId)
+            .collection("followed_brands")
+            .document(brandName)
+        
+        try await ref.setData([
+            "followedAt": Timestamp()
+        ])
+    }
+
+    func unfollowBrand(userId: String, brandName: String) async throws {
+        let ref = Firestore.firestore()
+            .collection("users")
+            .document(userId)
+            .collection("followed_brands")
+            .document(brandName)
+        
+        try await ref.delete()
+    }
+
+    func isFollowingBrand(brandName: String) async -> Bool {
+        guard let user = try? AuthenticationManager.shared.getAuthenticatedUser() else { return false }
+
+        let docRef = Firestore.firestore()
+            .collection("users")
+            .document(user.uid)
+            .collection("followed_brands")
+            .document(brandName)
+
+        do {
+            let snapshot = try await docRef.getDocument()
+            return snapshot.exists
+        } catch {
+            print("❌ Failed to check if following brand: \(error)")
+            return false
+        }
+    }
+
+
 
     
     func addUserPreference(userId: String, preference: String) async throws {
@@ -283,7 +347,7 @@ final class UserManager {
         try await userDocument(userId: userId).updateData(data as [AnyHashable : Any])
     }
     
-    func addUserFavoriteProduct(userId: String, productId: Int) async throws {
+    func addUserFavoriteProduct(userId: String, productId: String) async throws {
         let document = userFavoriteProductCollection(userId: userId).document()
         let documentId = document.documentID
         
@@ -299,7 +363,7 @@ final class UserManager {
     func removeUserFavoriteProduct(userId: String, favoriteProductId: String) async throws {
         try await userFavoriteProductDocument(userId: userId, favoriteProductId: favoriteProductId).delete()
     }
-    func removeUserFavoriteProductByProductId(userId: String, productId: Int) async throws {
+    func removeUserFavoriteProductByProductId(userId: String, productId: String) async throws {
         let snapshot = try await userFavoriteProductCollection(userId: userId)
             .whereField("product_id", isEqualTo: productId)
             .getDocuments()
@@ -314,16 +378,17 @@ final class UserManager {
         try await userFavoriteProductCollection(userId: userId).getDocuments(as: UserFavoriteProduct.self)
     }
     
-    func getAllUserCartProducts(userId: String) async throws -> [Product] {
+    func getAllUserCartProducts(userId: String) async throws -> [CartItem] {
         let snapshot = try await Firestore.firestore()
             .collection("users")
             .document(userId)
             .collection("cart_products")
             .getDocuments()
 
-        return snapshot.documents.compactMap { try? $0.data(as: Product.self) }
+        return snapshot.documents.compactMap { try? $0.data(as: CartItem.self) }
     }
-    func removeUserCartProduct(userId: String, productId: Int) async throws {
+
+    func removeUserCartProduct(userId: String, productId: String) async throws {
         try await Firestore.firestore()
             .collection("users")
             .document(userId)
@@ -389,19 +454,19 @@ import Combine
 
 struct UserFavoriteProduct: Codable {
     let id: String
-    let productId: Int
+    let productId: String
     let dateCreated: Date
-    
+
     enum CodingKeys: String, CodingKey {
         case id = "id"
         case productId = "product_id"
         case dateCreated = "date_created"
     }
-    
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.id = try container.decode(String.self, forKey: .id)
-        self.productId = try container.decode(Int.self, forKey: .productId)
+        self.productId = try container.decode(String.self, forKey: .productId)
         self.dateCreated = try container.decode(Date.self, forKey: .dateCreated)
     }
 
@@ -411,5 +476,5 @@ struct UserFavoriteProduct: Codable {
         try container.encode(self.productId, forKey: .productId)
         try container.encode(self.dateCreated, forKey: .dateCreated)
     }
-    
 }
+

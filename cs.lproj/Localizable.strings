@@ -1,0 +1,32 @@
+/* 
+  Localizable.strings
+  SwiftfulFirebaseBootcamp
+
+  Created by Jakub Trusina on 4/30/25.
+  
+*/
+tryon_message = "Připravujeme revoluční 3D zážitek z virtuálního zkoušení oblečení.";
+menu_cart = "Košík";
+menu_favorites = "Oblíbené";
+menu_bag = "Taška";
+menu_profile = "Profil";
+menu_products = "Produkty";
+your_name = "Vaše jméno";
+loading_profile = "Načítání profilu...";
+personal_info = "Osobní údaje";
+name_label = "Jméno";
+name_placeholder = "Zadejte své celé jméno";
+gender_label = "Pohlaví";
+age_label = "Věk";
+age_placeholder = "Zadejte svůj věk";
+measurements_title = "Tělesné míry";
+height_label = "Výška (cm)";
+height_placeholder = "Zadejte výšku";
+weight_label = "Váha (kg)";
+weight_placeholder = "Zadejte váhu";
+fit_size_title = "Velikost a střih";
+top_size = "Velikost vršku";
+bottom_size = "Velikost spodku";
+fit_preference = "Preferovaný střih";
+view_size_guide = "📏 Zobrazit průvodce velikostí";
+book_consultation = "📅 Rezervace konzultace v obchodě";

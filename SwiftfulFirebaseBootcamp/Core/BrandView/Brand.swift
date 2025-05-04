@@ -1,20 +1,15 @@
-//
-//  Brand.swift
-//  SwiftfulFirebaseBootcamp
-//
-//  Created by Jakub Trusina on 4/11/25.
-//
-
 import Foundation
 import FirebaseFirestoreSwift
 
-struct Brand: Identifiable, Codable, Equatable {
+struct Brand: Identifiable, Codable {
     @DocumentID var id: String?
     let name: String
     let description: String
     let logoUrl: String?
-    
-    static func ==(lhs: Brand, rhs: Brand) -> Bool {
-        return lhs.id == rhs.id
-    }
+    let bannerUrl: String?
+    let story: String?
+    let instagram: String?
+    let website: String?
+    let email: String?
 }
+

@@ -2,15 +2,15 @@ import SwiftUI
 
 struct ProductSliderScrollView: View {
     let products: [Product]
-    let favoriteProductIds: Set<Int>
-    let cartAddedProductId: Int?
+    let favoriteProductIds: Set<String>
+    let cartAddedProductId: String?
     let onTap: (Product) -> Void
     let onToggleFavorite: (Product) -> Void
     let onAddToCart: (Product) -> Void
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: true) {
-            HStack(spacing: 16) {
+        ScrollView(.horizontal, showsIndicators: false) {
+            LazyHStack(spacing: 16) {
                 ForEach(products) { product in
                     SliderProductCardView(
                         product: product,
@@ -23,8 +23,8 @@ struct ProductSliderScrollView: View {
                     .frame(width: 160)
                 }
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal)
         }
-        .frame(height: 250)
+        .frame(height: 220) // slightly taller for better visuals
     }
 }
