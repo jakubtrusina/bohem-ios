@@ -5,10 +5,13 @@ import FirebaseFirestore
 
 @MainActor
 final class ProfileViewModel: ObservableObject {
+
+    // MARK: - Published Properties
+
     @Published var saveSuccessMessage: AlertMessage? = nil
     @Published private(set) var user: DBUser? = nil
 
-    // MARK: - User Info Fields
+    // User Profile Fields
     @Published var name: String = ""
     @Published var gender: String = ""
     @Published var age: Int?
@@ -19,32 +22,35 @@ final class ProfileViewModel: ObservableObject {
     @Published var clothingSizeBottom: String = ""
     @Published var fitPreference: String = ""
 
+    // Reservations
+    @Published var rezervace: [Rezervace] = []
+
+    // Managers
+    let rezervaceNotificationManager = RezervaceNotificationManager()
+
+    // MARK: - Load User
+
     func loadCurrentUser() async throws {
         let authDataResult = try AuthenticationManager.shared.getAuthenticatedUser()
         let fetchedUser = try await UserManager.shared.getUser(userId: authDataResult.uid)
         self.user = fetchedUser
 
-        // Populate form fields
-        self.name = fetchedUser.name ?? ""
-        self.gender = fetchedUser.gender ?? ""
-        self.age = fetchedUser.age
-        self.height = fetchedUser.height
-        self.weight = fetchedUser.weight
-        self.bodyShape = fetchedUser.bodyShape ?? ""
-        self.clothingSizeTop = fetchedUser.clothingSizeTop ?? ""
-        self.clothingSizeBottom = fetchedUser.clothingSizeBottom ?? ""
-        self.fitPreference = fetchedUser.fitPreference ?? ""
-        
+        name = fetchedUser.name ?? ""
+        gender = fetchedUser.gender ?? ""
+        age = fetchedUser.age
+        height = fetchedUser.height
+        weight = fetchedUser.weight
+        bodyShape = fetchedUser.bodyShape ?? ""
+        clothingSizeTop = fetchedUser.clothingSizeTop ?? ""
+        clothingSizeBottom = fetchedUser.clothingSizeBottom ?? ""
+        fitPreference = fetchedUser.fitPreference ?? ""
+
         AnalyticsManager.shared.setUserProperties(from: fetchedUser)
 
-        print("🔥 Setting user properties for:", fetchedUser.userId)
-        print("🔥 Gender:", fetchedUser.gender ?? "nil")
-        print("🔥 Age:", fetchedUser.age ?? -1)
-        print("🔥 Body shape:", fetchedUser.bodyShape ?? "nil")
-        print("🔥 Fit preference:", fetchedUser.fitPreference ?? "nil")
-
-        
+        print("🔥 Loaded user: \(fetchedUser.userId)")
     }
+
+    // MARK: - Update User Info
 
     func updateUserInfo() {
         guard let user else { return }
@@ -68,12 +74,61 @@ final class ProfileViewModel: ObservableObject {
                 .updateData(data)
 
             self.user = try await UserManager.shared.getUser(userId: user.userId)
-            self.saveSuccessMessage = AlertMessage(text: "Profile updated successfully!")
+            self.saveSuccessMessage = AlertMessage(text: "Profil byl úspěšně aktualizován!")
         }
+
         AnalyticsManager.shared.setUserProperties(from: self.user!)
     }
-    
-    
+
+    // MARK: - Rezervace
+
+    func loadRezervace() async {
+        guard let userId = user?.userId else { return }
+
+        do {
+            let snapshot = try await Firestore.firestore()
+                .collection("users")
+                .document(userId)
+                .collection("rezervace")
+                .order(by: "date", descending: false)
+                .getDocuments()
+
+            rezervace = snapshot.documents.compactMap { doc in
+                let data = doc.data()
+                return Rezervace(
+                    id: doc.documentID,
+                    date: data["date"] as? String ?? "",
+                    time: data["time"] as? String ?? "",
+                    reason: data["reason"] as? String ?? "",
+                    confirmed: data["confirmed"] as? Bool ?? false,
+                    locationName: data["locationName"] as? String ?? "Neznámé místo"
+                )
+            }
+
+        } catch {
+            print("❌ Chyba při načítání rezervací: \(error)")
+        }
+    }
+
+    func deleteRezervace(_ rezervace: Rezervace) async {
+        guard let userId = user?.userId else { return }
+
+        do {
+            try await Firestore.firestore()
+                .collection("users")
+                .document(userId)
+                .collection("rezervace")
+                .document(rezervace.id)
+                .delete()
+
+            rezervaceNotificationManager.cancelNotification(for: rezervace)
+            await loadRezervace()
+        } catch {
+            print("❌ Chyba při mazání rezervace: \(error)")
+        }
+    }
+
+    // MARK: - Profile Image
 
     func saveProfileImage(item: PhotosPickerItem) {
         guard let user else { return }
@@ -93,7 +148,7 @@ final class ProfileViewModel: ObservableObject {
         guard let user else { return }
 
         guard let data = image.jpegData(compressionQuality: 0.8) else {
-            print("❌ Failed to compress camera image")
+            print("❌ Nepodařilo se zkomprimovat obrázek")
             return
         }
 
@@ -104,7 +159,7 @@ final class ProfileViewModel: ObservableObject {
             try await UserManager.shared.updateUserProfileImagePath(userId: user.userId, path: path, url: url.absoluteString)
             self.user = try await UserManager.shared.getUser(userId: user.userId)
         } catch {
-            print("❌ Error saving image from camera:", error)
+            print("❌ Chyba při ukládání obrázku z kamery: \(error)")
         }
     }
 
@@ -117,6 +172,8 @@ final class ProfileViewModel: ObservableObject {
             self.user = try await UserManager.shared.getUser(userId: user.userId)
         }
     }
+
+    // MARK: - Other User Features
 
     func togglePremiumStatus() {
         guard let user else { return }
@@ -164,9 +221,41 @@ final class ProfileViewModel: ObservableObject {
             self.user = try await UserManager.shared.getUser(userId: user.userId)
         }
     }
+
+    // MARK: - Supporting Models
+
     struct AlertMessage: Identifiable {
         let id = UUID()
         let text: String
     }
 
+    struct Rezervace: Identifiable {
+        var id: String
+        var date: String
+        var time: String
+        var reason: String
+        var confirmed: Bool
+        var locationName: String
+        var fullDateTime: Date? {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd HH:mm"
+            return formatter.date(from: "\(date) \(time)")
+        }
+
+    }
+
+    // MARK: - Profile Completion
+
+    var profileCompletion: Int {
+        let totalFields = 7
+        var filled = 0
+        if !name.isEmpty { filled += 1 }
+        if !gender.isEmpty { filled += 1 }
+        if age != nil { filled += 1 }
+        if height != nil { filled += 1 }
+        if weight != nil { filled += 1 }
+        if !clothingSizeTop.isEmpty { filled += 1 }
+        if !clothingSizeBottom.isEmpty { filled += 1 }
+        return Int((Double(filled) / Double(totalFields)) * 100)
+    }
 }

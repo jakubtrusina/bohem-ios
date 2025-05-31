@@ -7,7 +7,7 @@ struct BrandProductsView: View {
     @State private var selectedProduct: Product? = nil
     @State private var isShowingDetail = false
     @State private var cartAddedProductId: String? = nil
-    @State private var favoriteProductIds: Set<String> = []
+    @ObservedObject private var vm = ProductsViewModel.shared
     @State private var didLoad = false
 
     var body: some View {
@@ -24,7 +24,6 @@ struct BrandProductsView: View {
             viewModel.selectedBrands = [brand.name]
             viewModel.getProducts()
             viewModel.loadFavoriteProductIds()
-            favoriteProductIds = viewModel.favoriteProductIds
         }
         .navigationDestination(isPresented: $isShowingDetail) {
             if let product = selectedProduct {

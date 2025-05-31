@@ -1,6 +1,5 @@
 import Foundation
 import FirebaseFirestore
-import FirebaseFirestoreSwift
 
 final class BrandManager {
     static let shared = BrandManager()

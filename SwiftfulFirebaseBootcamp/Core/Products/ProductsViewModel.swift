@@ -16,14 +16,13 @@ final class ProductsViewModel: ObservableObject {
     // MARK: - Published State
     @Published private(set) var allProducts: [Product] = []
     @Published private(set) var filteredProducts: [Product] = []
-    @Published private(set) var favoriteProductIds: Set<String> = []
-
+    @Published var favoriteProductIds: Set<String> = []
     @Published var selectedColors: [String] = []
     @Published var selectedSizes: [String] = []
     @Published var selectedPriceRange: ClosedRange<Int>? = nil
     @Published var selectedBrands: [String] = []
     @Published var showNewArrivalsOnly: Bool = false
-
+    @Published var loadedBrandMap: [String: Brand] = [:]
     @Published var selectedMainCategory: String = "Dámské Oblečení"
     @Published var selectedSubcategory: String? = nil
     @Published var selectedFilter: FilterOption? = nil
@@ -61,21 +60,42 @@ final class ProductsViewModel: ObservableObject {
         applyFilters()
     }
 
-    // MARK: - Enums
-    enum FilterOption: String, CaseIterable {
-        case noFilter
-        case priceHigh
-        case priceLow
-
-        var priceDescending: Bool? {
-            switch self {
-            case .noFilter: return nil
-            case .priceHigh: return true
-            case .priceLow: return false
+    func loadBrands() {
+        Task {
+            do {
+                let brands = try await BrandManager.shared.getAllBrands()
+                DispatchQueue.main.async {
+                    self.loadedBrandMap = Dictionary(uniqueKeysWithValues: brands.map { ($0.name, $0) })
+                }
+            } catch {
+                print("❌ Failed to load brands: \(error.localizedDescription)")
             }
         }
     }
 
+    
+    // MARK: - Enums
+    enum FilterOption: String, CaseIterable {
+        case noFilter
+        case lowestFirst
+        case highestFirst
+
+        var priceDescending: Bool? {
+            switch self {
+            case .noFilter: return nil
+            case .highestFirst: return true
+            case .lowestFirst: return false
+            }
+        }
+
+        var displayName: String {
+            switch self {
+            case .noFilter: return "Bez řazení"
+            case .lowestFirst: return "Od nejlevnějšího"
+            case .highestFirst: return "Od nejdražšího"
+            }
+        }
+    }
     enum CategoryOption: String, CaseIterable {
         case noCategory, smartphones, laptops, fragrances
 
@@ -83,6 +103,34 @@ final class ProductsViewModel: ObservableObject {
             self == .noCategory ? nil : self.rawValue
         }
     }
+    
+    func getProducts(forBrand brandName: String) {
+        productsListener?.remove()
+
+        let query = Firestore.firestore().collection("products")
+            .whereField("brand", isEqualTo: brandName)
+
+        productsListener = query.addSnapshotListener { [weak self] snapshot, error in
+            guard let self = self else { return }
+
+            if let error = error {
+                print("❌ Firestore error:", error.localizedDescription)
+                return
+            }
+
+            guard let snapshot = snapshot else {
+                print("⚠️ No snapshot")
+                return
+            }
+
+            let decoded = snapshot.documents.compactMap { try? $0.data(as: Product.self) }
+            self.allProducts = decoded
+            self.filteredProducts = decoded
+            print("✅ Loaded \(decoded.count) products for brand \(brandName)")
+        }
+    }
+
+
 
     // MARK: - Core Methods
     func clearFilters() {
@@ -94,11 +142,26 @@ final class ProductsViewModel: ObservableObject {
         getProducts()
     }
 
+    func inferMainCategory(for subcategory: String, from available: [String: [String]]) -> String? {
+        for (main, subs) in available {
+            if subs.contains(subcategory) {
+                return main
+            }
+        }
+        return nil
+    }
+
+    
     func getProducts() {
         productsListener?.remove()
 
-        let normalizedCategory = selectedMainCategory
+        // 🚨 Prevent calling Firestore with an empty category
+        guard !selectedMainCategory.isEmpty else {
+            print("❌ Cannot fetch products: selectedMainCategory is empty")
+            return
+        }
 
+        let normalizedCategory = selectedMainCategory.normalized
         print("🟡 Setting up listener for category_normalized = '\(normalizedCategory)'")
 
         var query: Query = Firestore.firestore().collection("products")
@@ -131,6 +194,7 @@ final class ProductsViewModel: ObservableObject {
             self.applyFilters()
         }
     }
+
 
     func products(forBrand brandName: String) async -> [Product] {
         return allProducts.filter { $0.brand == brandName }
@@ -275,9 +339,16 @@ final class ProductsViewModel: ObservableObject {
                 try await UserManager.shared.addUserFavoriteProduct(userId: user.uid, productId: productId)
                 updated.insert(productId)
             }
+
+            // 🔄 Update the Published property to sync UI
+            await MainActor.run {
+                self.favoriteProductIds = updated
+            }
+
         } catch {
             print("❌ Favorite toggle failed:", error)
         }
+
         return updated
     }
 

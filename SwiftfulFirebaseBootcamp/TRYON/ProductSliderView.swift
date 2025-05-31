@@ -1,9 +1,11 @@
 import SwiftUI
 
 struct ProductSliderView: View {
-    @StateObject private var viewModel = ProductsViewModel.shared
-    @State private var favoriteProductIds: Set<String> = []
-    @State private var cartAddedProductId: String? = nil
+    var showFilters: Bool = true
+    var filteredProducts: [Product]? = nil
+
+    @ObservedObject private var vm = ProductsViewModel.shared
+    @State private var cartAddedProductIds: Set<String> = []
     @State private var selectedProduct: Product? = nil
     @State private var isShowingDetail = false
 
@@ -14,91 +16,71 @@ struct ProductSliderView: View {
     ]
 
     let subcategories: [String: [String]] = [
-        "Dámské Oblečení": [
-            "Šaty",
-            "Dámská Trička",
-            "Kabát",        // Treated as standalone subcategory now
-            "Kalhoty",
-            "Mikiny",
-            "Sukně"
-        ],
-        "Dámské Plavky": [
-            "Jednodílné",
-            "Horní díl",
-            "Spodní díl"
-        ],
-        "Doplňky": [
-            "Náhrdelníky",
-            "Náramky",
-            "Náušnice",
-            "Pásky",
-            "Prstýnky",
-            "Tašky"
-        ]
+        "Dámské Oblečení": ["Šaty", "Dámská Trička", "Kabát", "Kalhoty", "Mikiny", "Sukně"],
+        "Dámské Plavky": ["Jednodílné", "Horní díl", "Spodní díl"],
+        "Doplňky": ["Náhrdelníky", "Náramky", "Náušnice", "Pásky", "Prstýnky", "Tašky"]
     ]
-
 
     var body: some View {
         VStack(spacing: 4) {
-            // Main Category Selector
-            TryOnMainCategorySelector(
-                categories: mainCategories,
-                selectedCategory: $viewModel.selectedMainCategory,
-                onSelect: { category in
-                    withAnimation(.easeInOut) {
-                        viewModel.selectedMainCategory = category
-                        viewModel.selectedSubcategory = nil
-                        viewModel.getProducts()
-                        viewModel.filterProducts(for: nil)
-                    }
-                    AnalyticsManager.shared.logCategorySelected(main: category, sub: nil)
-                }
-            )
-
-            // Subcategory Selector
-            if let subList = subcategories[viewModel.selectedMainCategory] {
-                TryOnSubcategorySelector(
-                    subcategories: subList,
-                    selectedSubcategory: viewModel.selectedSubcategory ?? "Vše",
-                    onSelect: { sub in
+            if showFilters {
+                TryOnMainCategorySelector(
+                    categories: mainCategories,
+                    selectedCategory: $vm.selectedMainCategory,
+                    onSelect: { category in
                         withAnimation(.easeInOut) {
-                            let subValue = sub == "Vše" ? nil : sub
-                            viewModel.selectedSubcategory = subValue
-                            viewModel.filterProducts(for: subValue)
+                            vm.selectedMainCategory = category
+                            vm.selectedSubcategory = nil
+                            vm.getProducts()
+                            vm.filterProducts(for: nil)
                         }
-                        AnalyticsManager.shared.logCategorySelected(
-                            main: viewModel.selectedMainCategory,
-                            sub: sub == "Vše" ? nil : sub
-                        )
+                        AnalyticsManager.shared.logCategorySelected(main: category, sub: nil)
                     }
                 )
+
+                if let subList = subcategories[vm.selectedMainCategory] {
+                    TryOnSubcategorySelector(
+                        subcategories: subList,
+                        selectedSubcategory: vm.selectedSubcategory ?? "Vše",
+                        onSelect: { sub in
+                            withAnimation(.easeInOut) {
+                                let subValue = sub == "Vše" ? nil : sub
+                                vm.selectedSubcategory = subValue
+                                vm.filterProducts(for: subValue)
+                            }
+                            AnalyticsManager.shared.logCategorySelected(
+                                main: vm.selectedMainCategory,
+                                sub: sub == "Vše" ? nil : sub
+                            )
+                        }
+                    )
+                }
             }
 
-            // Product ScrollView
-            if viewModel.filteredProducts.isEmpty {
+            let productsToShow = filteredProducts ?? vm.filteredProducts
+
+            if productsToShow.isEmpty {
                 Text("Již brzy")
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundColor(.white.opacity(0.8))
             } else {
                 ProductSliderScrollView(
-                    products: viewModel.filteredProducts,
-                    favoriteProductIds: favoriteProductIds,
-                    cartAddedProductId: cartAddedProductId,
+                    products: productsToShow,
+                    favoriteProductIds: vm.favoriteProductIds,
+                    cartAddedProductIds: cartAddedProductIds,
                     onTap: { product in
                         selectedProduct = product
-                        // Prevents empty sheet on first load
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                             isShowingDetail = true
                         }
                     },
                     onToggleFavorite: { product in
                         Task {
-                            let updated = await viewModel.toggleFavoriteProduct(
+                            let updated = await vm.toggleFavoriteProduct(
                                 productId: product.id,
-                                currentFavorites: favoriteProductIds
+                                currentFavorites: vm.favoriteProductIds
                             )
-                            favoriteProductIds = updated
                             if updated.contains(product.id) {
                                 AnalyticsManager.shared.logAddToFavorites(product: product)
                             }
@@ -106,13 +88,18 @@ struct ProductSliderView: View {
                     },
                     onAddToCart: { product in
                         Task {
-                            await CartManager.shared.addToCart(product: product, size: "M", quantity: 1)
+                            guard let size = product.sizes?.first?.size else {
+                                print("❌ No available size for product \(product.title ?? product.id)")
+                                return
+                            }
+
+                            await CartManager.shared.addToCart(product: product, size: size, quantity: 1)
                             AnalyticsManager.shared.logAddToCart(product: product, quantity: 1)
                             withAnimation {
-                                cartAddedProductId = product.id
+                                cartAddedProductIds.insert(product.id)
                             }
                             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                                cartAddedProductId = nil
+                                cartAddedProductIds.remove(product.id)
                             }
                         }
                     }
@@ -121,9 +108,8 @@ struct ProductSliderView: View {
         }
         .onAppear {
             AnalyticsManager.shared.logEvent(.screenView, params: ["screen_name": "ProductSliderView"])
-            viewModel.getProducts()
-            viewModel.loadFavoriteProductIds()
-            favoriteProductIds = viewModel.favoriteProductIds
+            vm.getProducts()
+            vm.loadFavoriteProductIds()
         }
         .sheet(isPresented: $isShowingDetail) {
             if let product = selectedProduct {

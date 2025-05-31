@@ -4,42 +4,83 @@ struct FavoriteView: View {
     @StateObject private var viewModel = FavoriteViewModel()
     @State private var selectedProduct: Product? = nil
     @State private var cartProductIds: Set<String> = []
-    @State private var favoriteProductIds: Set<String> = []
+    @ObservedObject private var vm = ProductsViewModel.shared
     @State private var cartAddedProductId: String? = nil
+    @Environment(\.dismiss) var dismiss
+
+    @Binding var bannerTarget: BannerNavigationTarget?
+    @Binding var showMenu: Bool
+    @Binding var showSignInView: Bool
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                LazyVStack(spacing: 24) {
-                    ForEach(viewModel.favoriteProducts) { product in
-                        OverlayProductCardView(
-                            product: product,
-                            isFavorited: true,
-                            isCartAdded: isCartAdded(product),
-                            onTap: { handleTap(product) },
-                            onToggleFavorite: { handleToggleFavorite(product) },
-                            onAddToCart: { handleAddToCart(product) }
-                        )
+        VStack {
+            if viewModel.favoriteProducts.isEmpty {
+                Spacer()
+                VStack(spacing: 16) {
+                    Image(systemName: "heart.slash")
+                        .font(.system(size: 48))
+                        .foregroundColor(.gray)
+
+                    Text("Zatím nemáte žádné oblíbené produkty.")
+                        .font(.title3.bold())
+                        .multilineTextAlignment(.center)
+
+                    Text("Prozkoumejte naši kolekci a přidejte si produkty, které se vám líbí.")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+
+                    Button {
+                        bannerTarget = .category("Dámské Oblečení")
+                    } label: {
+                        Text("Přejít na produkty")
+                            .font(.headline)
+                            .padding(.vertical, 12)
+                            .padding(.horizontal, 32)
+                            .background(Color.black)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
                     }
                 }
-                .padding()
-            }
-            .navigationTitle("menu_favorites")
-            .onAppear {
-                viewModel.addListenerForFavorites()
-                viewModel.loadFavoriteProductIds()
-                Task {
-                    cartProductIds = await viewModel.loadCartProductIds()
-                    favoriteProductIds = viewModel.favoriteProductIds
+                .padding(.horizontal)
+                Spacer()
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 24) {
+                        ForEach(viewModel.favoriteProducts) { product in
+                            OverlayProductCardView(
+                                product: product,
+                                isFavorited: vm.favoriteProductIds.contains(product.id),
+                                isCartAdded: isCartAdded(product),
+                                onTap: { handleTap(product) },
+                                onToggleFavorite: { handleToggleFavorite(product) },
+                                onAddToCart: { handleAddToCart(product) }
+                            )
+                        }
+                    }
+                    .padding()
                 }
             }
-            .sheet(item: $selectedProduct) { product in
-                SingleProductView(productId: product.id)
+        }
+        .onAppear {
+            viewModel.addListenerForFavorites()
+            Task {
+                cartProductIds = await viewModel.loadCartProductIds()
             }
         }
+        .onDisappear {
+            selectedProduct = nil
+            cartProductIds = []
+            cartAddedProductId = nil
+        }
+        .sheet(item: $selectedProduct) { product in
+            SingleProductView(productId: product.id)
+        }
+        .navigationBarBackButtonHidden(true)
     }
 
-    // MARK: - Extracted Handlers
+    // MARK: - Helpers
 
     private func isCartAdded(_ product: Product) -> Bool {
         return cartAddedProductId == product.id
@@ -50,8 +91,12 @@ struct FavoriteView: View {
     }
 
     private func handleToggleFavorite(_ product: Product) {
-        if let match = viewModel.userFavoriteProducts.first(where: { $0.productId == product.id }) {
-            viewModel.removeFromFavorites(favoriteProductId: match.id)
+        Task {
+            let updated = await vm.toggleFavoriteProduct(productId: product.id, currentFavorites: vm.favoriteProductIds)
+            await MainActor.run {
+                vm.favoriteProductIds = updated
+            }
+
         }
     }
 

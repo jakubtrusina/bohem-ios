@@ -1,62 +1,89 @@
 import SwiftUI
+import Kingfisher
 
 struct ProductFiltersView: View {
     @ObservedObject var viewModel: ProductsViewModel
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                // 🆕 New Arrivals Toggle
-                Toggle("Pouze novinky", isOn: $viewModel.showNewArrivalsOnly)
-                    .toggleStyle(SwitchToggleStyle(tint: .black))
-                    .padding(.horizontal)
-                    .onChange(of: viewModel.showNewArrivalsOnly) { _ in
-                        viewModel.applyFilters()
-                    }
+        VStack(spacing: 14) {
+            // 🆕 New Arrivals Toggle
+            Toggle(isOn: $viewModel.showNewArrivalsOnly) {
+                Label("Pouze novinky", systemImage: "sparkles")
+                    .font(.subheadline.bold())
+            }
+            .toggleStyle(SwitchToggleStyle(tint: .black))
+            .padding()
+            .background(Color.gray.opacity(0.05))
+            .cornerRadius(12)
+            .padding(.horizontal)
 
-                // 🎨 Color Filter
-                FilterSection(title: "Barva") {
-                    ColorWrapHStack(
-                        selectedItems: $viewModel.selectedColors,
-                        allItems: viewModel.availableColors
-                    ) { color in
-                        viewModel.selectedColors.toggleItem(color)
-                        viewModel.applyFilters()
+            // 🎨 Color Filter
+            FilterSection(title: "Barva") {
+                ColorWrapHStack(
+                    selectedItems: $viewModel.selectedColors,
+                    allItems: viewModel.availableColors
+                ) { color in
+                    viewModel.selectedColors.toggleItem(color)
+                    viewModel.applyFilters()
+                }
+            }
+
+            // 📏 Size Filter
+            FilterSection(title: "Velikost") {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 44), spacing: 8)], spacing: 8) {
+                    ForEach(viewModel.availableSizes, id: \.self) { size in
+                        let isSelected = viewModel.selectedSizes.contains(size)
+                        Button(action: {
+                            viewModel.selectedSizes.toggleItem(size)
+                            viewModel.applyFilters()
+                        }) {
+                            Text(size)
+                                .font(.subheadline)
+                                .frame(width: 50, height: 36)
+                                .background(isSelected ? Color.black : Color.gray.opacity(0.2))
+                                .foregroundColor(isSelected ? .white : .black)
+                                .cornerRadius(8)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(Color.black.opacity(isSelected ? 1 : 0.3), lineWidth: 1)
+                                )
+                        }
                     }
                 }
+                .padding(.horizontal)
+            }
 
-                // 📏 Size Filter
-                FilterSection(title: "Velikost") {
-                    WrapHStack(
-                        selectedItems: $viewModel.selectedSizes,
-                        allItems: viewModel.availableSizes
-                    ) { size in
-                        viewModel.selectedSizes.toggleItem(size)
-                        viewModel.applyFilters()
+            // 🏷 Brand Filter
+            FilterSection(title: "Značka") {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: 8)], spacing: 10) {
+                    ForEach(viewModel.availableBrands, id: \.self) { brand in
+                        let isSelected = viewModel.selectedBrands.contains(brand)
+                        let logoUrl = viewModel.loadedBrandMap[brand]?.logoUrl
+
+                        BrandChipView(
+                            brandName: brand,
+                            logoUrl: logoUrl,
+                            isSelected: isSelected
+                        ) {
+                            viewModel.selectedBrands.toggleItem(brand)
+                            viewModel.applyFilters()
+                        }
                     }
                 }
+                .padding(.horizontal)
+            }
 
-                // 🏷 Brand Filter
-                FilterSection(title: "Značka") {
-                    WrapHStack(
-                        selectedItems: $viewModel.selectedBrands,
-                        allItems: viewModel.availableBrands
-                    ) { brand in
-                        viewModel.selectedBrands.toggleItem(brand)
-                        viewModel.applyFilters()
-                    }
-                }
-
-                // 💰 Price Range Filter
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Cena")
-                        .font(.headline)
-                        .padding(.horizontal)
-
+            // 💰 Price Range Filter
+            FilterSection(title: "Cena") {
+                VStack(alignment: .leading, spacing: 12) {
                     if let range = viewModel.selectedPriceRange {
-                        Text("\(range.lowerBound) CZK – \(range.upperBound) CZK")
-                            .font(.subheadline)
-                            .padding(.horizontal)
+                        HStack {
+                            Text("Od: \(range.lowerBound) CZK")
+                            Spacer()
+                            Text("Do: \(range.upperBound) CZK")
+                        }
+                        .font(.caption)
+                        .padding(.horizontal)
                     }
 
                     Slider(
@@ -74,17 +101,19 @@ struct ProductFiltersView: View {
                     )
                     .accentColor(.black)
                     .padding(.horizontal)
-                }
 
-                // 🔄 Reset Button
-                Button("Resetovat filtry") {
-                    viewModel.resetFilters()
+                    Button("Od nejlevnějšího") {
+                        Task {
+                            try? await viewModel.filterSelected(option: .lowestFirst)
+                        }
+                    }
+                    .font(.caption)
+                    .foregroundColor(.black)
+                    .padding(.horizontal)
                 }
-                .foregroundColor(.red)
-                .padding(.top)
             }
-            .padding(.vertical)
         }
+        .padding(.vertical, 8)
     }
 }
 
@@ -99,42 +128,16 @@ struct FilterSection<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
             Text(title)
-                .font(.headline)
+                .font(.subheadline.bold())
                 .padding(.horizontal)
 
             content
         }
-    }
-}
-
-// MARK: - WrapHStack (Text-based options)
-struct WrapHStack: View {
-    @Binding var selectedItems: [String]
-    let allItems: [String]
-    let onToggle: (String) -> Void
-
-    var body: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 70), spacing: 8)], spacing: 8) {
-            ForEach(allItems, id: \.self) { item in
-                Button(action: {
-                    onToggle(item)
-                }) {
-                    Text(item)
-                        .font(.subheadline)
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 12)
-                        .background(selectedItems.contains(item) ? Color.black : Color.gray.opacity(0.2))
-                        .foregroundColor(selectedItems.contains(item) ? .white : .black)
-                        .cornerRadius(8)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.black.opacity(selectedItems.contains(item) ? 1 : 0.3), lineWidth: 1)
-                        )
-                }
-            }
-        }
+        .padding(.vertical, 12)
+        .background(Color.gray.opacity(0.05))
+        .cornerRadius(12)
         .padding(.horizontal)
     }
 }
@@ -192,6 +195,42 @@ extension Array where Element == String {
             removeAll { $0 == item }
         } else {
             append(item)
+        }
+    }
+}
+
+struct BrandChipView: View {
+    let brandName: String
+    let logoUrl: String?
+    let isSelected: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 6) {
+                if let logoUrl = logoUrl, let url = URL(string: logoUrl) {
+                    KFImage(url)
+                        .resizable()
+                        .cancelOnDisappear(true)
+                        .fade(duration: 0.2)
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 20, height: 20)
+                        .clipShape(Circle())
+                }
+
+                Text(brandName)
+                    .font(.caption)
+                    .lineLimit(1)
+                    .foregroundColor(isSelected ? .white : .black)
+            }
+            .padding(.vertical, 6)
+            .padding(.horizontal, 10)
+            .background(isSelected ? Color.black : Color.gray.opacity(0.2))
+            .cornerRadius(16)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.black.opacity(isSelected ? 1 : 0.3), lineWidth: 1)
+            )
         }
     }
 }

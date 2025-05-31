@@ -1,8 +1,8 @@
 import Foundation
-import FirebaseFirestoreSwift
+import FirebaseFirestore
 
 struct Brand: Identifiable, Codable {
-    @DocumentID var id: String?
+    @DocumentID var id: String? // ✅ Already makes Brand Identifiable
     let name: String
     let description: String
     let logoUrl: String?
@@ -11,5 +11,5 @@ struct Brand: Identifiable, Codable {
     let instagram: String?
     let website: String?
     let email: String?
+    let phone: String?
 }
-

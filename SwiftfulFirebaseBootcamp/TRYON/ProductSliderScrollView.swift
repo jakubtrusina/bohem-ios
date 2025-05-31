@@ -3,7 +3,7 @@ import SwiftUI
 struct ProductSliderScrollView: View {
     let products: [Product]
     let favoriteProductIds: Set<String>
-    let cartAddedProductId: String?
+    let cartAddedProductIds: Set<String>
     let onTap: (Product) -> Void
     let onToggleFavorite: (Product) -> Void
     let onAddToCart: (Product) -> Void
@@ -15,7 +15,7 @@ struct ProductSliderScrollView: View {
                     SliderProductCardView(
                         product: product,
                         isFavorited: favoriteProductIds.contains(product.id),
-                        isCartAdded: cartAddedProductId == product.id,
+                        isCartAdded: cartAddedProductIds.contains(product.id),
                         onTap: { onTap(product) },
                         onToggleFavorite: { onToggleFavorite(product) },
                         onAddToCart: { onAddToCart(product) }

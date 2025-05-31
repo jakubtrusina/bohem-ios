@@ -10,6 +10,8 @@ struct BrandUploadView: View {
     @State private var website = ""
     @State private var email = ""
     @State private var successMessage: String?
+    @State private var phone = ""
+
 
     var body: some View {
         NavigationView {
@@ -30,6 +32,8 @@ struct BrandUploadView: View {
                     TextField("Instagram Handle (no @)", text: $instagram)
                     TextField("Website", text: $website)
                     TextField("Email", text: $email)
+                    TextField("Phone Number", text: $phone)
+
                 }
 
                 Button("Upload to Firestore") {
@@ -43,7 +47,9 @@ struct BrandUploadView: View {
                             story: story.isEmpty ? nil : story,
                             instagram: instagram.isEmpty ? nil : instagram,
                             website: website.isEmpty ? nil : website,
-                            email: email.isEmpty ? nil : email
+                            email: email.isEmpty ? nil : email,
+                            phone: phone.isEmpty ? nil : phone // ✅ Added here
+
                         )
 
                         do {

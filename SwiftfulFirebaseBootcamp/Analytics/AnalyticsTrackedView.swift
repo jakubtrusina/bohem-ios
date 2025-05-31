@@ -1,10 +1,3 @@
-//
-//  Untitled.swift
-//  SwiftfulFirebaseBootcamp
-//
-//  Created by Jakub Trusina on 4/15/25.
-//
-
 import SwiftUI
 
 struct AnalyticsTrackedView<Content: View>: View {
@@ -12,8 +5,8 @@ struct AnalyticsTrackedView<Content: View>: View {
     let content: Content
     @State private var startTime: Date?
 
-    init(screen: String, @ViewBuilder content: () -> Content) {
-        self.screenName = screen
+    init(screenName: String, @ViewBuilder content: () -> Content) {
+        self.screenName = screenName
         self.content = content()
     }
 
@@ -21,7 +14,9 @@ struct AnalyticsTrackedView<Content: View>: View {
         content
             .onAppear {
                 startTime = Date()
-                AnalyticsManager.shared.logEvent(.screenView, params: ["screen_name": screenName])
+                AnalyticsManager.shared.logEvent(.screenView, params: [
+                    "screen_name": screenName
+                ])
             }
             .onDisappear {
                 if let startTime {

@@ -2,47 +2,76 @@ import SwiftUI
 
 struct HelpPageView: View {
     var body: some View {
-        List {
-            NavigationLink("🛍️ Shopping & Orders") {
-                HelpDetailView(
-                    title: "Shopping & Orders",
-                    content: """
-                    Browse our curated collections, add items to your cart, and check out using Apple Pay or card. Every item is quality-checked before shipping. Orders can be tracked in your profile.
-                    """
-                )
-            }
+        VStack(spacing: 0) {
+            Text("Nápověda a podpora")
+                .font(.largeTitle.bold())
+                .padding(.top, 20)
+                .foregroundColor(.black)
 
-            NavigationLink("🚚 Shipping Information") {
-                HelpDetailView(
-                    title: "Shipping Information",
-                    content: """
-                    We offer free standard shipping on all domestic orders. Delivery takes 3–5 business days. Once shipped, you’ll receive a tracking number by email.
-                    """
-                )
-            }
+            List {
+                Section {
+                    NavigationLink(destination: HelpDetailView(
+                        title: "Nákupy a objednávky",
+                        content: """
+                        Prohlížejte naše pečlivě vybrané kolekce, přidejte si produkty do košíku a dokončete nákup pomocí Apple Pay nebo platební karty. Každý produkt je před odesláním pečlivě zkontrolován. Stav objednávky můžete sledovat ve svém profilu.
+                        """
+                    )) {
+                        HStack {
+                            Image(systemName: "bag")
+                            Text("Nákupy a objednávky")
+                        }.foregroundColor(.black)
+                    }
+                }
 
-            NavigationLink("🔁 Returns & Exchanges") {
-                HelpDetailView(
-                    title: "Returns & Exchanges",
-                    content: """
-                    We accept returns within 14 days of delivery. Items must be unused, in original packaging, and with tags. To start a return, email us at support@bohemapp.com with your order number.
-                    """
-                )
-            }
+                Section {
+                    NavigationLink(destination: HelpDetailView(
+                        title: "Doprava a doručení",
+                        content: """
+                        Nabízíme dopravu zdarma na všechny objednávky v rámci ČR. Doručení obvykle trvá 3–5 pracovních dnů. Jakmile bude objednávka odeslána, obdržíte e-mail s číslem pro sledování zásilky.
+                        """
+                    )) {
+                        HStack {
+                            Image(systemName: "truck")
+                            Text("Doprava a doručení")
+                        }.foregroundColor(.black)
+                    }
+                }
 
-            NavigationLink("📞 Contact Us") {
-                HelpDetailView(
-                    title: "Contact Us",
-                    content: """
-                    Have a question? We’re happy to help. Email us at support@bohemapp.com and we’ll get back to you within 24 hours.
-                    """
-                )
+                Section {
+                    NavigationLink(destination: HelpDetailView(
+                        title: "Vrácení a výměna zboží",
+                        content: """
+                        Zboží můžete vrátit do 14 dnů od doručení. Musí být nenošené, v původním obalu a s visačkami. Pro zahájení vrácení nás kontaktujte na support@bohemapp.com a uveďte číslo objednávky.
+                        """
+                    )) {
+                        HStack {
+                            Image(systemName: "arrow.uturn.left")
+                            Text("Vrácení a výměna zboží")
+                        }.foregroundColor(.black)
+                    }
+                }
+
+                Section {
+                    NavigationLink(destination: HelpDetailView(
+                        title: "Kontaktujte nás",
+                        content: """
+                        Máte dotaz? Rádi vám pomůžeme. Napište nám na support@bohemapp.com a odpovíme vám do 24 hodin.
+                        """
+                    )) {
+                        HStack {
+                            Image(systemName: "envelope")
+                            Text("Kontaktujte nás")
+                        }.foregroundColor(.black)
+                    }
+                }
             }
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .background(Color.white)
         }
-        .navigationTitle("Help & Support")
+        .background(Color.white)
     }
 }
-
 
 struct HelpDetailView: View {
     let title: String
@@ -50,11 +79,15 @@ struct HelpDetailView: View {
 
     var body: some View {
         ScrollView {
-            Text(content)
-                .padding()
-                .font(.body)
+            VStack(alignment: .leading, spacing: 16) {
+                Text(content)
+                    .font(.body)
+                    .foregroundColor(.black)
+                    .padding()
+            }
         }
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
+        .background(Color.white)
     }
 }

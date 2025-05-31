@@ -1,8 +1,5 @@
 import SwiftUI
 import FirebaseAnalytics
-import FirebaseAnalyticsSwift
-
-
 
 
 

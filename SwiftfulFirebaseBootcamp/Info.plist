@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>AppUsesNonExemptEncryption</key>
+	<false/>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -19,10 +21,5 @@
 	<string>664667458806-11imd5a3q3elgt31nadvs6g67eiapfco.apps.googleusercontent.com</string>
 	<key>com.apple.developer.in-app-payments</key>
 	<string>merchant.com.bohem.store</string>
-
-	<!-- ✅ Add this line -->
-	<key>AppUsesNonExemptEncryption</key>
-	<false/>
-
 </dict>
 </plist>

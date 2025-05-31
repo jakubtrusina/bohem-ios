@@ -7,7 +7,8 @@
 
 import Foundation
 import FirebaseFirestore
-import FirebaseFirestoreSwift
+import FirebaseAuth
+
 
 struct Movie: Codable {
     let id: String
@@ -240,9 +241,8 @@ final class UserManager {
             return
         }
 
-        let cartItem = CartItem(product: product, size: productSize, quantity: quantity)
-        let docId = "\(product.id)-\(size)"
-
+        let cartItem = CartItem(id: UUID().uuidString, product: product, size: productSize, quantity: quantity)
+        let docId = cartItem.id
         let document = Firestore.firestore()
             .collection("users")
             .document(userId)
@@ -395,6 +395,23 @@ final class UserManager {
             .collection("cart_products")
             .document(String(productId))
             .delete()
+    }
+
+    func fetchClosetProductIds() async -> [String] {
+        guard let uid = Auth.auth().currentUser?.uid else { return [] }
+
+        let ref = Firestore.firestore()
+            .collection("users")
+            .document(uid)
+            .collection("closet")
+
+        do {
+            let snapshot = try await ref.getDocuments()
+            return snapshot.documents.map { $0.documentID }
+        } catch {
+            print("❌ Error fetching closet: \(error)")
+            return []
+        }
     }
 
     

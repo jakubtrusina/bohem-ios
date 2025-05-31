@@ -1,6 +1,5 @@
 import Foundation
 import FirebaseFirestore
-import FirebaseFirestoreSwift
 import FirebaseAuth
 
 @MainActor
@@ -22,9 +21,16 @@ final class CartManager: ObservableObject {
 
     func addToCart(product: Product, size: String, quantity: Int) async {
         guard let uid = Auth.auth().currentUser?.uid else { return }
+
         if let productSize = product.sizes?.first(where: { $0.size == size }) {
-            let item = CartItem(product: product, size: productSize, quantity: quantity)
-            let docId = "\(product.id)-\(productSize.size)"
+            let item = CartItem(
+                id: UUID().uuidString, // 🔐 new persistent ID
+                product: product,
+                size: productSize,
+                quantity: quantity
+            )
+
+            let docId = item.id // 🔁 document ID is now stable
 
             do {
                 try db.collection("users")
@@ -39,6 +45,7 @@ final class CartManager: ObservableObject {
         }
     }
 
+
     func updateQuantity(docId: String, quantity: Int) async {
         guard let uid = Auth.auth().currentUser?.uid else { return }
 
@@ -49,18 +56,12 @@ final class CartManager: ObservableObject {
                 .document(docId)
                 .updateData(["quantity": quantity])
 
-            let updatedItems = try await UserManager.shared.getAllUserCartProducts(userId: uid)
             DispatchQueue.main.async {
-                self.cartItems = self.cartItems.map { current in
-                    if current.id == docId {
-                        var updated = current
-                        updated.quantity = quantity
-                        return updated
-                    } else {
-                        return current
-                    }
+                if let index = self.cartItems.firstIndex(where: { $0.id == docId }) {
+                    self.cartItems[index].quantity = quantity
                 }
             }
+
         } catch {
             print("❌ Error updating quantity:", error)
         }
@@ -69,28 +70,22 @@ final class CartManager: ObservableObject {
     func updateSize(item: CartItem, newSize: ProductSize) async {
         guard let uid = Auth.auth().currentUser?.uid else { return }
 
-        let oldDocId = "\(item.product.id)-\(item.size.size)"
-        let newDocId = "\(item.product.id)-\(newSize.size)"
+        let docId = item.id // ✅ not based on size anymore
 
         do {
-            try await db.collection("users")
-                .document(uid)
-                .collection("cart_products")
-                .document(oldDocId)
-                .delete()
-
             var updatedItem = item
             updatedItem.size = newSize
 
             try await db.collection("users")
                 .document(uid)
                 .collection("cart_products")
-                .document(newDocId)
-                .setData(updatedItem.dictionary)
+                .document(docId)
+                .setData(from: updatedItem) // ✅ full overwrite
 
-            let updatedItems = try await UserManager.shared.getAllUserCartProducts(userId: uid)
             DispatchQueue.main.async {
-                self.cartItems = updatedItems
+                if let index = self.cartItems.firstIndex(where: { $0.id == item.id }) {
+                    self.cartItems[index] = updatedItem
+                }
             }
 
         } catch {
@@ -98,10 +93,10 @@ final class CartManager: ObservableObject {
         }
     }
 
-    func remove(productId: String, size: String) async {
-        guard let uid = Auth.auth().currentUser?.uid else { return }
 
-        let docId = "\(productId)-\(size)"
+
+    func remove(docId: String) async {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
 
         do {
             try await db.collection("users")
@@ -113,6 +108,7 @@ final class CartManager: ObservableObject {
             print("❌ Error removing product:", error)
         }
     }
+
 
     func clearCart() {
         cartItems.removeAll()

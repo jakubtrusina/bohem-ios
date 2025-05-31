@@ -1,9 +1,9 @@
-import FirebaseFirestoreSwift
+import FirebaseFirestore
 
 struct CartItem: Identifiable, Codable, Hashable {
-    var id: String { "\(product.id)-\(size.size)" }
+    let id: String // <- Keep it persistent (not regenerated)
     let product: Product
-    var size: ProductSize  // ✅ MUST BE 'var', not 'let'
+    var size: ProductSize
     var quantity: Int
 
     static func == (lhs: CartItem, rhs: CartItem) -> Bool {
@@ -14,6 +14,7 @@ struct CartItem: Identifiable, Codable, Hashable {
         hasher.combine(id)
     }
 }
+
 
 extension CartItem {
     var dictionary: [String: Any] {
