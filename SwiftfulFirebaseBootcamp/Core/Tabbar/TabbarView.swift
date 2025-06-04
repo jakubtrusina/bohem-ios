@@ -148,11 +148,12 @@ struct TabbarView: View {
             ))
 
         case .booking:
-            if let user = profileViewModel.user, let email = user.email {
+            if let user = profileViewModel.user, let email = user.email { let phone = user.phoneNumber ?? ""
                 return AnyView(BookingView(viewModel: BookingViewModel(
                     userId: user.userId,
                     userName: profileViewModel.name,
                     userEmail: email,
+                    userPhone: phone,
                     locationId: "nyc_showroom"
                 )))
             } else {

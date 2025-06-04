@@ -5,6 +5,76 @@ import PassKit
 import Stripe
 import FirebaseFunctions
 import StripePaymentSheet
+import Foundation
+
+
+enum DeliveryMethod: String, CaseIterable {
+    case home = "home"
+    case pickup = "pickup"
+    case cod = "cod"
+
+    var title: String {
+        switch self {
+        case .home: return "Doručení domů"
+        case .pickup: return "Osobní odběr"
+        case .cod: return "Na dobírku"
+        }
+    }
+}
+
+enum ShippingOption: String, CaseIterable, Identifiable {
+    case ceskaPosta = "Česká pošta do ruky"
+    case zasPickup = "Zásilkovna (osobní odběr)"
+    case zasAddress = "Zásilkovna doručení na adresu"
+    case gls = "GLS"
+
+    var id: String { self.rawValue }
+
+    var price: Int {
+        switch self {
+        case .ceskaPosta, .zasPickup, .gls: return 0
+        case .zasAddress: return 99
+        }
+    }
+
+    var requiresPickupPoint: Bool {
+        self == .zasPickup
+    }
+}
+
+enum PaymentOption: String, CaseIterable, Identifiable {
+    case cod = "Dobírkou"
+    case card = "On-line platba kartou"
+    case bankTransfer = "On-line bankovní převod"
+
+    var id: String { self.rawValue }
+
+    var price: Int {
+        switch self {
+        case .cod: return 39
+        case .card, .bankTransfer: return 0
+        }
+    }
+}
+
+
+struct DeliveryOption {
+    let method: DeliveryMethod
+    let label: String
+    let price: Double
+
+    var isFree: Bool { price == 0 }
+
+    var formattedPrice: String {
+        isFree ? "ZDARMA" : "\(Int(price)) Kč"
+    }
+
+    static let all: [DeliveryOption] = [
+        DeliveryOption(method: .home, label: "GLS", price: 0),
+        DeliveryOption(method: .pickup, label: "Zásilkovna doručení na adresu", price: 99),
+        DeliveryOption(method: .cod, label: "Zásilkovna na dobírku", price: 99)
+    ]
+}
 
 struct CheckoutView: View {
     @State private var showSavedInfoMessage = false
@@ -19,6 +89,12 @@ struct CheckoutView: View {
     @State private var isLaunchingApplePay = false
     @State private var paymentSheet: PaymentSheet?
     @State private var paymentResult: PaymentSheetResult?
+    @State private var selectedDeliveryMethod: DeliveryMethod = .home
+    @State private var showZasilkovnaMap = false
+    @State private var selectedPickupPoint: PickupPoint? = nil
+    @State private var selectedShipping: ShippingOption = .ceskaPosta
+    @State private var selectedPayment: PaymentOption = .card
+    @Environment(\.dismiss) private var dismiss
 
     @ObservedObject var cartManager = CartManager.shared
 
@@ -26,12 +102,33 @@ struct CheckoutView: View {
         ZStack {
             checkoutContent
 
-            if !orderSubmitted {
-                stickyBottomButtons
+        }
+        .sheet(isPresented: $showZasilkovnaMap) {
+            WidgetWebView { point in
+                self.selectedPickupPoint = point
+                self.showZasilkovnaMap = false
             }
         }
+
+
+
         .navigationTitle("Checkout")
+        .navigationBarBackButtonHidden(true)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: {
+                    dismiss()
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                        Text("Zpět")
+                    }
+                    .foregroundColor(.black)
+                }
+            }
+        }
+
         .onAppear {
             AnalyticsManager.shared.logCustomEvent(name: "checkout_view_opened")
         }
@@ -39,78 +136,141 @@ struct CheckoutView: View {
         .overlay(savedInfoMessageOverlay, alignment: .top)
     }
 
+    private func topViewController() -> UIViewController? {
+        guard var top = UIApplication.shared
+            .connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .flatMap({ $0.windows })
+            .first(where: \.isKeyWindow)?
+            .rootViewController else {
+                return nil
+        }
+
+        while let presented = top.presentedViewController {
+            top = presented
+        }
+
+        return top
+    }
+
+    
+    private let functions = Functions.functions()
+
     private var checkoutContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
+                
+                // 1. Shipping Info
                 GroupBox(label: Text("Doručovací údaje").bold()) {
-                    ShippingInfoSection(fullName: $fullName, address: $address, city: $city, zip: $zip, phone: $phone)
+                    ShippingInfoSection(
+                        fullName: $fullName,
+                        address: $address,
+                        city: $city,
+                        zip: $zip,
+                        phone: $phone
+                    )
                 }
 
-                Divider()
+                // 2. Delivery Method Picker (moved up)
+                GroupBox(label: Text("📦 Doprava a Platba").bold()) {
+                    VStack(alignment: .leading, spacing: 24) {
 
-                OrderSummarySection(items: cartManager.cartItems, total: cartTotal)
+                        // 🚚 Shipping Section
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Doprava")
+                                .font(.headline)
 
-                Divider()
+                            ForEach(ShippingOption.allCases) { option in
+                                Button(action: { selectedShipping = option }) {
+                                    HStack {
+                                        Image(systemName: selectedShipping == option ? "largecircle.fill.circle" : "circle")
+                                        Text("\(option.rawValue) \(option.price == 0 ? "ZDARMA" : "\(option.price) Kč")")
+                                    }
+                                }
+                                .foregroundColor(.primary)
 
-                if orderSubmitted {
-                    VStack(spacing: 16) {
-                        Text("✅ Objednávka úspěšně odeslána!")
-                            .foregroundColor(.green)
-                            .font(.title3.bold())
-                        Button("Zpět do obchodu") {
-                            // Navigation logic if needed
+                                if option.requiresPickupPoint && selectedShipping == option {
+                                    Button(action: {
+                                        showZasilkovnaMap = true
+                                    }) {
+                                        Text(selectedPickupPoint != nil ? "✅ Pobočka vybrána" : "Vybrat pobočku Zásilkovny")
+                                            .font(.subheadline)
+                                            .foregroundColor(.blue)
+                                    }
+
+                                    if let point = selectedPickupPoint {
+                                        Text("📍 \(point.name), \(point.address), \(point.city)")
+                                            .font(.caption)
+                                            .foregroundColor(.gray)
+                                    }
+                                }
+                            }
+                        }
+
+                        Divider()
+
+                        // 💳 Payment Section
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Platba")
+                                .font(.headline)
+
+                            ForEach(PaymentOption.allCases) { option in
+                                Button(action: { selectedPayment = option }) {
+                                    HStack {
+                                        Image(systemName: selectedPayment == option ? "largecircle.fill.circle" : "circle")
+                                        Text("\(option.rawValue) \(option.price == 0 ? "ZDARMA" : "\(option.price) Kč")")
+                                    }
+                                }
+                                .foregroundColor(.primary)
+                            }
                         }
                     }
                 }
 
-                Spacer(minLength: 80)
+
+                // 3. Order Summary
+                GroupBox {
+                    OrderSummarySection(
+                        items: cartManager.cartItems,
+                        itemTotal: itemTotal,
+                        selectedShipping: $selectedShipping,
+                        selectedPayment: $selectedPayment,
+                        selectedPickupPoint: $selectedPickupPoint
+                    )                }
+
+                PaymentSection(
+                    orderSubmitted: orderSubmitted,
+                    isSubmitting: isSubmitting,
+                    isFormValid: isFormValid,
+                    selectedPayment: selectedPayment, // ← updated
+                    onSubmit: submitOrder,
+                    onCardPay: preparePaymentSheet,
+                    onApplePay: startApplePay
+                )
+
+
             }
             .padding([.horizontal, .bottom])
         }
     }
-
-    private var stickyBottomButtons: some View {
-        VStack(spacing: 0) {
-            VStack(spacing: 12) {
-                ApplePayButton {
-                    AnalyticsManager.shared.logCustomEvent(name: "payment_method_selected", params: ["method": "apple_pay"])
-                    isLaunchingApplePay = true
-                    startApplePay()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                        isLaunchingApplePay = false
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .frame(height: 50)
-                .background(Color.black)
-
-
-                Button(action: {
-                    if isFormValid {
-                        AnalyticsManager.shared.logCustomEvent(name: "payment_method_selected", params: ["method": "card"])
-                        preparePaymentSheet()
-                    }
-                }) {
-                    Text("Zaplatit kartou")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                        .background(Color.black)
-                        .foregroundColor(.white)
-                }
-                .disabled(!isFormValid || isSubmitting)
-            }
-            .padding(.horizontal)
-            .padding(.top, 12)
-            .padding(.bottom, 20)
-            .background(.ultraThinMaterial)
+    
+    private var itemTotal: Double {
+        cartManager.cartItems.reduce(0.0) {
+            $0 + (Double($1.product.price ?? 0) * Double($1.quantity))
         }
-        .frame(maxWidth: .infinity)
-        .frame(maxHeight: .infinity, alignment: .bottom)
-        .ignoresSafeArea(.keyboard, edges: .bottom)
-        .transition(.move(edge: .bottom))
     }
-
+    
+    private var paymentMethodText: String {
+        switch selectedPayment {
+        case .cod:
+            return "Dobírkou"
+        case .card:
+            return "Platba kartou"
+        case .bankTransfer:
+            return "Bankovní převod"
+        }
+    }
+    
     private var submissionOverlay: some View {
         Group {
             if isSubmitting {
@@ -140,19 +300,24 @@ struct CheckoutView: View {
     }
 
     private var cartTotal: Double {
-        cartManager.cartItems.reduce(0.0) {
+        let productTotal = cartManager.cartItems.reduce(0.0) {
             $0 + (Double($1.product.price ?? 0) * Double($1.quantity))
         }
+        return productTotal + Double(selectedShipping.price) + Double(selectedPayment.price)
     }
 
     private var isFormValid: Bool {
         !fullName.isEmpty && !address.isEmpty && !city.isEmpty && !zip.isEmpty && !phone.isEmpty
     }
+    
+    private var selectedDeliveryOption: DeliveryOption? {
+        DeliveryOption.all.first(where: { $0.method == selectedDeliveryMethod })
+    }
 
     private func saveOrderToFirestore() async {
         guard let uid = Auth.auth().currentUser?.uid else { return }
 
-        let order: [String: Any] = [
+        var order: [String: Any] = [
             "userId": uid,
             "timestamp": Timestamp(),
             "fullName": fullName,
@@ -160,6 +325,13 @@ struct CheckoutView: View {
             "city": city,
             "zip": zip,
             "phone": phone,
+
+            // ✅ Add these:
+            "shippingMethod": selectedShipping.rawValue,
+            "shippingPrice": selectedShipping.price,
+            "paymentMethod": selectedPayment.rawValue,
+            "paymentPrice": selectedPayment.price,
+
             "items": cartManager.cartItems.map {
                 [
                     "title": $0.product.title ?? "",
@@ -172,6 +344,15 @@ struct CheckoutView: View {
             "total": cartTotal
         ]
 
+        // ✅ If Zásilkovna pickup is selected, attach point info
+        if selectedShipping.requiresPickupPoint, let pickup = selectedPickupPoint {
+            order["zasilkovnaPickupPoint"] = [
+                "name": pickup.name,
+                "address": pickup.address,
+                "city": pickup.city
+            ]
+        }
+
         do {
             try await Firestore.firestore().collection("orders").addDocument(data: order)
             orderSubmitted = true
@@ -179,6 +360,7 @@ struct CheckoutView: View {
             print("❌ Failed to save order:", error)
         }
     }
+
 
     private func submitOrder() {
         isSubmitting = true
@@ -216,6 +398,10 @@ struct CheckoutView: View {
     }
 
     private func startApplePay() {
+        print("📲 Apple Pay button tapped")
+        print("🔍 canMakePayments:", PKPaymentAuthorizationController.canMakePayments())
+        print("🔍 canMakePayments(usingNetworks):", PKPaymentAuthorizationController.canMakePayments(usingNetworks: [.visa, .masterCard, .amex]))
+
         guard PKPaymentAuthorizationController.canMakePayments(),
               PKPaymentAuthorizationController.canMakePayments(usingNetworks: [.visa, .masterCard, .amex]) else {
             print("❌ Apple Pay not available or no card configured")
@@ -228,12 +414,16 @@ struct CheckoutView: View {
         request.merchantCapabilities = .capability3DS
         request.countryCode = "CZ"
         request.currencyCode = "CZK"
+
+        let total = NSDecimalNumber(value: cartTotal)
+        print("💰 Apple Pay total: \(total) CZK")
         request.paymentSummaryItems = [
-            PKPaymentSummaryItem(label: "Bohem Order", amount: NSDecimalNumber(value: cartTotal))
+            PKPaymentSummaryItem(label: "Bohem Order", amount: total)
         ]
 
         let newDelegate = ApplePayDelegate {
             Task {
+                print("✅ Apple Pay payment authorized — saving order to Firestore")
                 await saveOrderToFirestore()
             }
         }
@@ -243,15 +433,22 @@ struct CheckoutView: View {
         let controller = PKPaymentAuthorizationController(paymentRequest: request)
         controller.delegate = newDelegate
         controller.present { presented in
-            if !presented {
-                print("❌ Failed to present Apple Pay sheet")
+            if presented {
+                print("✅ Apple Pay sheet presented successfully")
+            } else {
+                print("❌ Failed to present Apple Pay sheet — check entitlements and capabilities")
             }
         }
     }
 
+
     private func preparePaymentSheet() {
         let amountInCents = Int(cartTotal * 100)
-
+        guard !isSubmitting else {
+            print("⚠️ Already submitting — ignoring tap")
+            return
+        }
+        isSubmitting = true
         let trimmedShipping: [String: Any] = [
             "name": fullName.trimmingCharacters(in: .whitespacesAndNewlines),
             "phone": phone.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -274,31 +471,49 @@ struct CheckoutView: View {
                 }
 
                 guard let data = result?.data as? [String: Any],
-                      let clientSecret = data["clientSecret"] as? String else {
-                    print("❌ Missing clientSecret")
+                      let clientSecret = data["clientSecret"] as? String,
+                      let customerId = data["customer"] as? String,
+                      let ephemeralKey = data["ephemeralKey"] as? String else {
+                    print("❌ Missing Stripe setup info")
                     return
                 }
+                print("👉 Stripe response:")
+                print("clientSecret: \(clientSecret)")
+                print("customer: \(customerId)")
+                print("ephemeralKey: \(ephemeralKey)")
+
+                print("✅ Stripe data received. Preparing payment sheet...")
 
                 var config = PaymentSheet.Configuration()
                 config.merchantDisplayName = "Bohem"
                 config.applePay = .init(merchantId: "merchant.com.bohem.store", merchantCountryCode: "CZ")
+                config.customer = .init(id: customerId, ephemeralKeySecret: ephemeralKey)
                 config.style = .automatic
+                config.returnURL = "bohem://stripe-redirect"
 
-                self.paymentSheet = PaymentSheet(paymentIntentClientSecret: clientSecret, configuration: config)
-                presentPaymentSheet()
+
+                DispatchQueue.main.async {
+                    self.paymentSheet = PaymentSheet(
+                        paymentIntentClientSecret: clientSecret,
+                        configuration: config
+                    )
+                    print("📲 Presenting PaymentSheet")
+                    presentPaymentSheet()
+                }
             }
     }
 
+
     private func presentPaymentSheet() {
-        guard let paymentSheet = self.paymentSheet else { return }
-        guard let window = UIApplication.shared.connectedScenes
-            .compactMap({ $0 as? UIWindowScene })
-            .first?.windows.first else {
-            print("❌ No window found for PaymentSheet")
+        guard let paymentSheet = self.paymentSheet else {
+            print("❌ PaymentSheet is nil — aborting")
+            return }
+        guard let viewController = topViewController() else {
+            print("❌ Failed to get top view controller")
             return
         }
 
-        paymentSheet.present(from: window.rootViewController!) { result in
+        paymentSheet.present(from: viewController) { result in
             self.paymentResult = result
             switch result {
             case .completed:
@@ -309,16 +524,21 @@ struct CheckoutView: View {
                     await saveShippingInfoToUser()
                     isSubmitting = false
                 }
+
             case .canceled:
                 print("⚠️ Payment canceled")
                 AnalyticsManager.shared.logCustomEvent(name: "payment_result", params: ["status": "canceled"])
+                isSubmitting = false // ✅ ADD THIS
+
             case .failed(let error):
                 print("❌ Payment failed: \(error.localizedDescription)")
                 AnalyticsManager.shared.logCustomEvent(name: "payment_result", params: [
                     "status": "failed",
                     "error": error.localizedDescription
                 ])
+                isSubmitting = false // ✅ ADD THIS
             }
+
         }
     }
 

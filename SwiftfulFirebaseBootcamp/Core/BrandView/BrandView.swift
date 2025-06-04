@@ -7,6 +7,10 @@ struct BrandView: View {
     @Binding var bannerTarget: BannerNavigationTarget?
     @Binding var showMenu: Bool
 
+    @State private var selectedProduct: Product? = nil
+    @State private var isShowingDetail: Bool = false
+    @State private var cartAddedProductId: String? = nil
+
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
@@ -24,15 +28,17 @@ struct BrandView: View {
 
                 brandProductsSection()
             }
-            .padding(.top)
-            .padding(.horizontal) // ✅ apply horizontal padding to the whole content
-            .frame(maxWidth: 700)
         }
         .background(Color(.systemGroupedBackground).ignoresSafeArea())
         .navigationBarBackButtonHidden(true)
         .onAppear {
             if let brandName = brand?.name {
                 vm.getProducts(forBrand: brandName)
+            }
+        }
+        .navigationDestination(isPresented: $isShowingDetail) {
+            if let product = selectedProduct {
+                SingleProductView(productId: product.id)
             }
         }
     }
@@ -66,10 +72,9 @@ struct BrandView: View {
                 }
             }
 
-            Spacer().frame(height: 60) // Reserve space for the logo overlap
+            Spacer().frame(height: 60)
         }
     }
-
 
     // MARK: - Header
     private func brandHeader() -> some View {
@@ -137,33 +142,34 @@ struct BrandView: View {
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
                     ForEach(vm.filteredProducts) { product in
-                        NavigationLink(destination: SingleProductView(productId: product.id)) {
-                            VStack(spacing: 8) {
-                                if let thumb = product.thumbnail, let url = URL(string: thumb) {
-                                    KFImage(url)
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(height: 160)
-                                        .clipped()
-                                        .cornerRadius(8)
+                        OverlayProductCardView(
+                            product: product,
+                            isFavorited: vm.favoriteProductIds.contains(product.id),
+                            isCartAdded: cartAddedProductId == product.id,
+                            onTap: {
+                                selectedProduct = product
+                                isShowingDetail = true
+                            },
+                            onToggleFavorite: {
+                                Task {
+                                    let updated = await vm.toggleFavoriteProduct(productId: product.id, currentFavorites: vm.favoriteProductIds)
+                                    await MainActor.run {
+                                        vm.favoriteProductIds = updated
+                                    }
                                 }
-
-                                Text(product.title ?? "")
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                    .multilineTextAlignment(.center)
-
-                                if let price = product.price {
-                                    Text("\(price) CZK")
-                                        .font(.footnote)
-                                        .foregroundColor(.secondary)
+                            },
+                            onAddToCart: {
+                                Task {
+                                    await CartManager.shared.addToCart(product: product, size: "M", quantity: 1)
+                                    withAnimation {
+                                        cartAddedProductId = product.id
+                                    }
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                        cartAddedProductId = nil
+                                    }
                                 }
                             }
-                            .padding(8)
-                            .background(Color(.systemBackground))
-                            .cornerRadius(12)
-                            .shadow(radius: 2)
-                        }
+                        )
                     }
                 }
                 .padding(.horizontal)

@@ -208,6 +208,12 @@ struct SignInEmailView: View {
                     errorMessage = "Před přihlášením ověř svůj email. Ověřovací zpráva byla odeslána."
                     return
                 }
+
+                // ✅ Create Firestore profile
+                let authModel = AuthDataResultModel(user: user)
+                let dbUser = DBUser(auth: authModel)
+                try await UserManager.shared.createNewUser(user: dbUser)
+
             } else {
                 let result = try await Auth.auth().createUser(withEmail: email, password: password)
                 try await result.user.sendEmailVerification()

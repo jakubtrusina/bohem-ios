@@ -16,6 +16,16 @@
 				<string>com.googleusercontent.apps.664667458806-11imd5a3q3elgt31nadvs6g67eiapfco</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>bohem</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>bohem</string>
+			</array>
+		</dict>
 	</array>
 	<key>GIDClientID</key>
 	<string>664667458806-11imd5a3q3elgt31nadvs6g67eiapfco.apps.googleusercontent.com</string>

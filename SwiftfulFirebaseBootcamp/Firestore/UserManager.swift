@@ -26,6 +26,7 @@ struct DBUser: Codable {
     let preferences: [String]?
     let favoriteMovie: Movie?
     let profileImagePath: String?
+    let phoneNumber: String? // ✅ Add this line
     let profileImagePathUrl: String?
 
     // NEW FIELDS
@@ -50,6 +51,7 @@ struct DBUser: Codable {
         self.favoriteMovie = nil
         self.profileImagePath = nil
         self.profileImagePathUrl = nil
+        self.phoneNumber = nil // ✅ Fix
 
         // Defaults
         self.name = nil
@@ -73,6 +75,7 @@ struct DBUser: Codable {
         case preferences = "preferences"
         case favoriteMovie = "favorite_movie"
         case profileImagePath = "profile_image_path"
+        case phoneNumber // ✅ Add this line
         case profileImagePathUrl = "profile_image_path_url"
 
         // NEW KEYS
@@ -109,6 +112,8 @@ struct DBUser: Codable {
         self.clothingSizeTop = try container.decodeIfPresent(String.self, forKey: .clothingSizeTop)
         self.clothingSizeBottom = try container.decodeIfPresent(String.self, forKey: .clothingSizeBottom)
         self.fitPreference = try container.decodeIfPresent(String.self, forKey: .fitPreference)
+        self.phoneNumber = try container.decodeIfPresent(String.self, forKey: .phoneNumber)
+        
     }
 
     func encode(to encoder: Encoder) throws {

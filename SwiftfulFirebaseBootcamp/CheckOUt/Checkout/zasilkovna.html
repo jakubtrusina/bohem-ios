@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <title>Zásilkovna Výběr Pobočky</title>
+  <script src="https://widget.packeta.com/v6/www/js/library.js"></script>
+</head>
+<body>
+  <div id="zasilkovna-widget"></div>
+
+  <script>
+    Packeta.Widget.pick("170abc90e83d83f6", function(point) {
+        console.log("📦 Full point object:", JSON.stringify(point, null, 2));
+
+        window.webkit.messageHandlers.pickupPointHandler.postMessage({
+          id: String(point.id),                   // 👈 force string
+          name: String(point.name),
+          street: String(point.street),
+          city: String(point.city),
+          zip: String(point.zip),
+          country: String(point.country),
+          latitude: Number(point.latitude),       // 👈 force number
+          longitude: Number(point.longitude)      // 👈 force number
+        });
+      }, {
+        appIdentity: "bohem.app",
+        country: "cz",
+        language: "cs"
+      });
+  </script>
+</body>
+</html>

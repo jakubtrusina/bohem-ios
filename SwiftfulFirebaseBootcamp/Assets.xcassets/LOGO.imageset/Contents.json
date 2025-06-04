@@ -1,17 +1,15 @@
 {
   "images" : [
     {
-      "filename" : "LOGO_360x.png",
+      "filename" : "Bohem.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
-      "filename" : "LOGO_360x 1.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
-      "filename" : "LOGO_360x 2.png",
       "idiom" : "universal",
       "scale" : "3x"
     }

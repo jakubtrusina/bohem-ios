@@ -14,6 +14,7 @@ final class ProfileViewModel: ObservableObject {
     // User Profile Fields
     @Published var name: String = ""
     @Published var gender: String = ""
+    @Published var phoneNumber: String = ""
     @Published var age: Int?
     @Published var height: Double?
     @Published var weight: Double?
@@ -36,6 +37,7 @@ final class ProfileViewModel: ObservableObject {
         self.user = fetchedUser
 
         name = fetchedUser.name ?? ""
+        phoneNumber = fetchedUser.phoneNumber ?? ""
         gender = fetchedUser.gender ?? ""
         age = fetchedUser.age
         height = fetchedUser.height
@@ -58,6 +60,7 @@ final class ProfileViewModel: ObservableObject {
         Task {
             let data: [String: Any] = [
                 DBUser.CodingKeys.name.rawValue: name,
+                DBUser.CodingKeys.phoneNumber.rawValue: phoneNumber,
                 DBUser.CodingKeys.gender.rawValue: gender,
                 DBUser.CodingKeys.age.rawValue: age as Any,
                 DBUser.CodingKeys.height.rawValue: height as Any,

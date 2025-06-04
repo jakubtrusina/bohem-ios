@@ -145,6 +145,19 @@ struct ProfileView: View {
                         viewModel.updateUserInfo()
                     }
             }
+            TextField("Telefonní číslo", text: $viewModel.phoneNumber)
+                .keyboardType(.phonePad)
+                .font(.subheadline)
+                .textFieldStyle(.roundedBorder)
+                .frame(maxWidth: 240)
+                .onChange(of: viewModel.phoneNumber) { _ in
+                    viewModel.updateUserInfo()
+                    AnalyticsManager.shared.logCustomEvent(name: "profile_field_edited", params: [
+                        "field": "Telefonní číslo",
+                        "value": viewModel.phoneNumber
+                    ])
+                }
+
             if let email = viewModel.user?.email {
                 Text(email)
                     .font(.caption)

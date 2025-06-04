@@ -1,8 +1,10 @@
 import SwiftUI
+import FirebaseAuth
 
 struct TryonShowroomSection: View {
     @Binding var bannerTarget: BannerNavigationTarget?
     @State private var hasTrackedAppear = false
+    @State private var showLoginAlert = false
 
     var body: some View {
         VStack(spacing: 20) {
@@ -18,7 +20,7 @@ struct TryonShowroomSection: View {
 
             // MARK: - Persuasive Text
             VStack(spacing: 8) {
-                Text("Zažijte luxusní zážitek v našem showroomu")
+                Text("Zarezervujte si luxusní zážitek v našem showroomu")
                     .font(.title3.bold())
                     .multilineTextAlignment(.center)
 
@@ -31,12 +33,20 @@ struct TryonShowroomSection: View {
 
             // MARK: - Side-by-side Buttons
             HStack(spacing: 16) {
+                // ✅ Rezervace Button with Auth Check
                 Button(action: {
                     AnalyticsManager.shared.logEvent(.buttonClick, params: [
                         "screen": "MainTryOnView",
                         "button_id": "showroom_booking"
                     ])
-                    bannerTarget = .booking
+
+                    if Auth.auth().currentUser != nil {
+                        bannerTarget = .booking
+                    } else {
+                        print("🔒 User not logged in — showing login alert")
+                        showLoginAlert = true
+                    }
+
                 }) {
                     Text("Rezervace")
                         .frame(maxWidth: .infinity)
@@ -46,6 +56,8 @@ struct TryonShowroomSection: View {
                         .cornerRadius(10)
                 }
 
+
+                // 🗺️ Zobrazit trasu Button
                 Button(action: {
                     AnalyticsManager.shared.logEvent(.buttonClick, params: [
                         "screen": "MainTryOnView",
@@ -90,6 +102,15 @@ struct TryonShowroomSection: View {
                 ])
             }
         }
+        .alert("Přihlášení vyžadováno", isPresented: $showLoginAlert) {
+            Button("Přihlásit se") {
+                bannerTarget = .authRequired  // This should navigate to your login or settings view
+            }
+            Button("Zrušit", role: .cancel) { }
+        } message: {
+            Text("Abyste mohli vytvořit rezervaci v showroomu, musíte být přihlášeni ke svému účtu.")
+        }
+
     }
 
     // MARK: - Apple Maps Integration

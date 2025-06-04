@@ -224,6 +224,7 @@ enum BannerNavigationTarget: Hashable, Equatable {
     case brand(Brand)
     case category(String)
     case subcategory(String)
+    case authRequired
     case booking
     case favorites
     case cart
@@ -255,6 +256,8 @@ enum BannerNavigationTarget: Hashable, Equatable {
         case .subcategory(let sub):
             hasher.combine("subcategory")
             hasher.combine(sub)
+        case .authRequired:
+            AuthenticationView(showSignInView: .constant(true))
         case .booking:
             hasher.combine("booking")
         case .favorites:

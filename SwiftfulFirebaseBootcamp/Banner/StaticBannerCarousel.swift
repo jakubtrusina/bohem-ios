@@ -10,35 +10,33 @@ struct StaticBannerCarousel: View {
     var brandId: String?
 
     var body: some View {
-        Group {
-            if vm.banners.isEmpty {
+        let filtered = vm.bannersByBrand[brandId ?? ""] ?? []
+
+        return Group {
+            if filtered.isEmpty {
                 ProgressView("Načítání bannerů...")
                     .frame(height: 300)
             } else {
-                let filtered = vm.banners.filter { $0.brandId == brandId }
-
-                if filtered.isEmpty {
-                    EmptyView()
-                } else {
-                    TabView(selection: $currentIndex) {
-                        ForEach(filtered.indices, id: \.self) { index in
-                            staticBannerSlide(banner: filtered[index])
-                                .tag(index)
-                        }
+                TabView(selection: $currentIndex) {
+                    ForEach(filtered.indices, id: \.self) { index in
+                        staticBannerSlide(banner: filtered[index])
+                            .tag(index)
                     }
-                    .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
-                    .frame(height: 320)
-                    .onReceive(timer) { _ in
-                        withAnimation {
-                            currentIndex = (currentIndex + 1) % filtered.count
-                        }
+                }
+                .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
+                .frame(height: 320)
+                .onReceive(timer) { _ in
+                    withAnimation {
+                        currentIndex = (currentIndex + 1) % filtered.count
                     }
                 }
             }
         }
         .onAppear {
             Task {
-                await vm.fetchBanners(for: brandId)
+                if !vm.prefetchedBrands.contains(brandId ?? "") {
+                    await vm.fetchBanners(for: brandId)
+                }
             }
         }
     }
@@ -46,20 +44,15 @@ struct StaticBannerCarousel: View {
     @ViewBuilder
     private func staticBannerSlide(banner: Banner) -> some View {
         ZStack {
-            AsyncImage(url: URL(string: banner.imageUrl)) { phase in
-                switch phase {
-                case .empty:
+            KFImage(URL(string: banner.imageUrl))
+                .resizable()
+                .placeholder {
                     Color.gray.opacity(0.1).overlay(ProgressView())
-                case .success(let image):
-                    image.resizable().scaledToFill()
-                case .failure:
-                    Color.red.opacity(0.2).overlay(Text("❌ Chyba obrázku"))
-                @unknown default:
-                    EmptyView()
                 }
-            }
-            .frame(height: 320)
-            .clipped()
+                .cancelOnDisappear(true)
+                .scaledToFill()
+                .frame(height: 320)
+                .clipped()
 
             VStack(spacing: 12) {
                 Spacer()

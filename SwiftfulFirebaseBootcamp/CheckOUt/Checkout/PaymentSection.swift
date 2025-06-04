@@ -5,6 +5,7 @@ struct PaymentSection: View {
     let orderSubmitted: Bool
     let isSubmitting: Bool
     let isFormValid: Bool
+    let selectedPayment: PaymentOption
     let onSubmit: () -> Void
     let onCardPay: () -> Void
     let onApplePay: () -> Void
@@ -19,7 +20,6 @@ struct PaymentSection: View {
 
                     Button(action: {
                         Analytics.logEvent("back_to_shop_tapped", parameters: nil)
-                        // Insert actual navigation logic here if needed
                     }) {
                         Text("Zpět do obchodu")
                             .font(.headline)
@@ -32,63 +32,65 @@ struct PaymentSection: View {
                 }
             } else {
                 VStack(spacing: 12) {
-                    Button(action: {
-                        Analytics.logEvent("order_submit_attempted", parameters: [
-                            "form_valid": isFormValid
-                        ])
-                        onSubmit()
-                    }) {
-                        if isSubmitting {
-                            ProgressView()
-                        } else {
-                            Text("Odeslat objednávku")
-                                .font(.headline)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(isFormValid ? Color.black : Color.gray)
-                                .foregroundColor(.white)
-                                .cornerRadius(8)
-                        }
-                    }
-                    .disabled(!isFormValid || isSubmitting)
-
-                    ApplePayButton {
-                        if isFormValid && !isSubmitting {
-                            Analytics.logEvent("apple_pay_attempted", parameters: nil)
-                            onApplePay()
-                        } else {
-                            Analytics.logEvent("apple_pay_invalid_attempt", parameters: [
-                                "form_valid": isFormValid,
-                                "is_submitting": isSubmitting
+                    if selectedPayment == .cod {
+                        Button(action: {
+                            Analytics.logEvent("order_submit_attempted", parameters: [
+                                "form_valid": isFormValid
                             ])
+                            onSubmit()
+                        }) {
+                            if isSubmitting {
+                                ProgressView()
+                            } else {
+                                Text("Odeslat objednávku")
+                                    .font(.headline)
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(isFormValid ? Color.black : Color.gray)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(8)
+                            }
                         }
-                    }
-                    .frame(height: 44)
+                        .disabled(!isFormValid || isSubmitting)
+                    } else {
+                        ApplePayButton {
+                            if isFormValid && !isSubmitting {
+                                Analytics.logEvent("apple_pay_attempted", parameters: nil)
+                                onApplePay()
+                            } else {
+                                Analytics.logEvent("apple_pay_invalid_attempt", parameters: [
+                                    "form_valid": isFormValid,
+                                    "is_submitting": isSubmitting
+                                ])
+                            }
+                        }
+                        .frame(height: 44)
 
-                    Button(action: {
-                        if isFormValid && !isSubmitting {
-                            Analytics.logEvent("card_payment_attempted", parameters: nil)
-                            onCardPay()
-                        } else {
-                            Analytics.logEvent("card_payment_invalid_attempt", parameters: [
-                                "form_valid": isFormValid,
-                                "is_submitting": isSubmitting
-                            ])
+                        Button(action: {
+                            if isFormValid && !isSubmitting {
+                                Analytics.logEvent("card_payment_attempted", parameters: nil)
+                                onCardPay()
+                            } else {
+                                Analytics.logEvent("card_payment_invalid_attempt", parameters: [
+                                    "form_valid": isFormValid,
+                                    "is_submitting": isSubmitting
+                                ])
+                            }
+                        }) {
+                            if isSubmitting {
+                                ProgressView()
+                            } else {
+                                Text("Zaplatit kartou")
+                                    .font(.headline)
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(isFormValid ? Color.black : Color.gray)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(8)
+                            }
                         }
-                    }) {
-                        if isSubmitting {
-                            ProgressView()
-                        } else {
-                            Text("Zaplatit kartou")
-                                .font(.headline)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(isFormValid ? Color.black : Color.gray)
-                                .foregroundColor(.white)
-                                .cornerRadius(8)
-                        }
+                        .disabled(!isFormValid || isSubmitting)
                     }
-                    .disabled(!isFormValid || isSubmitting)
                 }
             }
         }

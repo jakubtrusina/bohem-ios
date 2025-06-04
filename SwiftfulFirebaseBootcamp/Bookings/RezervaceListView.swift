@@ -16,31 +16,51 @@ struct RezervaceListView: View {
                             .font(.headline)
                             .padding(.top, 40)
 
-                        NavigationLink(destination: BookingView(viewModel: BookingViewModel(
-                            userId: viewModel.user?.userId ?? "",
-                            userName: viewModel.name,
-                            userEmail: viewModel.user?.email ?? "",
-                            locationId: ""
-                        ))) {
-                            Text("Vytvořit novou rezervaci")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(Color.black)
-                                .cornerRadius(12)
-                                .padding(.horizontal)
-                        }
-                        .simultaneousGesture(TapGesture().onEnded {
-                            AnalyticsManager.shared.logEvent(.buttonClick, params: [
-                                "button_id": "new_reservation",
-                                "screen": "RezervaceListView"
-                            ])
-                            AnalyticsManager.shared.logEvent(.startCheckout, params: [
-                                "screen": "RezervaceListView"
-                            ])
-                        })
+                        if let user = viewModel.user {
+                            let bookingVM = BookingViewModel(
+                                userId: user.userId,
+                                userName: viewModel.name,
+                                userEmail: user.email ?? "",
+                                userPhone: user.phoneNumber ?? "",
+                                locationId: "temporary" // a placeholder that won't cause crash
+                            )
 
+                            NavigationLink(destination: BookingView(viewModel: bookingVM)) {
+                                Text("Vytvořit novou rezervaci")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                    .padding()
+                                    .frame(maxWidth: .infinity)
+                                    .background(Color.black)
+                                    .cornerRadius(12)
+                                    .padding(.horizontal)
+                            }
+                            .simultaneousGesture(TapGesture().onEnded {
+                                AnalyticsManager.shared.logEvent(.buttonClick, params: [
+                                    "button_id": "new_reservation",
+                                    "screen": "RezervaceListView"
+                                ])
+                                AnalyticsManager.shared.logEvent(.startCheckout, params: [
+                                    "screen": "RezervaceListView"
+                                ])
+                            })
+                        } else {
+                            VStack(spacing: 12) {
+                                Text("Pro vytvoření rezervace se prosím přihlaste.")
+                                    .multilineTextAlignment(.center)
+                                    .foregroundColor(.red)
+                                    .padding(.horizontal)
+
+                                NavigationLink("Přihlásit se", destination: AuthenticationView(showSignInView: .constant(true)))
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                    .padding()
+                                    .frame(maxWidth: .infinity)
+                                    .background(Color.black)
+                                    .cornerRadius(12)
+                                    .padding(.horizontal)
+                            }
+                        }
                         Spacer()
                     }
                 } else {
@@ -129,8 +149,12 @@ struct RezervaceListView: View {
             }
             .onAppear {
                 viewModel.rezervaceNotificationManager.requestPermission()
-                Task { await viewModel.loadRezervace() }
-            }
+                Task {
+                    if viewModel.user == nil {
+                        try? await viewModel.loadCurrentUser()
+                    }
+                    await viewModel.loadRezervace()
+                }            }
             .alert("Opravdu chcete rezervaci smazat?", isPresented: $showingAlert, presenting: rezervaceToDelete) { rezervace in
                 Button("Smazat", role: .destructive) {
                     Task {

@@ -20,6 +20,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
 
         FirebaseApp.configure()
+        let settings = Firestore.firestore().settings
+        settings.isPersistenceEnabled = true
+        Firestore.firestore().settings = settings
         StripeAPI.defaultPublishableKey = "pk_live_51RD7vzA3MbBDLpjkFpmBDZQBNRsY6ZPyZmxrNJp9yy19lNhvPfUvzQNI24aEIB9sKx4MF91nufdt8tU9Mqx6qyGV00UOKbhsBL"
 
         UNUserNotificationCenter.current().delegate = self

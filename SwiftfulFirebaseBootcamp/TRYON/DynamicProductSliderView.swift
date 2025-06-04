@@ -104,12 +104,8 @@ struct DynamicProductSlider: View {
         }
 
         // MARK: - Detail Sheet
-        .sheet(isPresented: $isShowingDetail) {
-            if let product = selectedProduct {
-                SingleProductView(productId: product.id)
-            } else {
-                ProgressView().padding()
-            }
+        .sheet(item: $selectedProduct) { product in
+            SingleProductView(productId: product.id)
         }
         .task {
             if let config = sliderVM.config, !hasTrackedSliderView {

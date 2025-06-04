@@ -1,10 +1,4 @@
-//
-//  Banners.swift
-//  SwiftfulFirebaseBootcamp
-//
-//  Created by Jakub Trusina on 5/20/25.
-//
-
+import Kingfisher
 import SwiftUI
 import FirebaseFirestore
 
@@ -16,21 +10,19 @@ struct Banner: Identifiable, Codable {
     var imageUrl: String
     var order: Int
     var destination: String?
-    var brandId: String? // Used for filtering
+    var brandId: String?
 }
 
 // MARK: - Banner ViewModel
 class BannerViewModel: ObservableObject {
-    @Published var banners: [Banner] = []
-    private var db = Firestore.firestore()
+    @Published var bannersByBrand: [String: [Banner]] = [:]
+    @Published var prefetchedBrands: Set<String> = []
 
+    private var db = Firestore.firestore()
     static let shared = BannerViewModel()
 
-    // Preload banners for specific brandIds
     func prefetch(for brandIds: [String]) async {
-        var allBanners: [Banner] = []
-
-        for brandId in brandIds {
+        for brandId in brandIds where !prefetchedBrands.contains(brandId) {
             do {
                 let snapshot = try await db.collection("banners")
                     .whereField("brandId", isEqualTo: brandId)
@@ -38,31 +30,37 @@ class BannerViewModel: ObservableObject {
                     .getDocuments()
 
                 let fetched = snapshot.documents.compactMap { try? $0.data(as: Banner.self) }
-                allBanners.append(contentsOf: fetched)
+
+                await MainActor.run {
+                    self.bannersByBrand[brandId] = fetched
+                    self.prefetchedBrands.insert(brandId)
+                }
+
                 print("✅ Prefetched banners for brand: \(brandId)")
             } catch {
-                print("❌ Failed to fetch banners for \(brandId): \(error.localizedDescription)")
+                print("Failed to fetch banners for \(brandId): \(error.localizedDescription)")
             }
-        }
-
-        await MainActor.run {
-            self.banners = allBanners
         }
     }
 
-    // Fallback fetch (if not prefetched)
     func fetchBanners(for brandId: String?) async {
-        var query: Query = db.collection("banners").order(by: "order")
-        if let brandId = brandId {
-            query = query.whereField("brandId", isEqualTo: brandId)
-        }
+        guard let brandId = brandId else { return }
 
         do {
-            let snapshot = try await query.getDocuments()
-            self.banners = snapshot.documents.compactMap { try? $0.data(as: Banner.self) }
-            print("✅ Fetched \(self.banners.count) banners")
+            let snapshot = try await db.collection("banners")
+                .whereField("brandId", isEqualTo: brandId)
+                .order(by: "order")
+                .getDocuments()
+
+            let fetched = snapshot.documents.compactMap { try? $0.data(as: Banner.self) }
+
+            await MainActor.run {
+                self.bannersByBrand[brandId] = fetched
+            }
+
+            print("✅ Fetched \(fetched.count) banners for \(brandId)")
         } catch {
-            print("❌ Error fetching banners: \(error.localizedDescription)")
+            print("Error fetching banners: \(error.localizedDescription)")
         }
     }
 }
@@ -77,36 +75,32 @@ struct DynamicBannerCarousel: View {
     @Binding var bannerTarget: BannerNavigationTarget?
 
     var body: some View {
-        Group {
-            if vm.banners.isEmpty {
+        let filtered = vm.bannersByBrand[brandId ?? ""] ?? []
+
+        return Group {
+            if filtered.isEmpty {
                 ProgressView("Načítání bannerů...")
                     .frame(height: 300)
             } else {
-                let filtered = vm.banners.filter { $0.brandId == brandId }
-                
-                if filtered.isEmpty {
-                    EmptyView()
-                } else {
-                    TabView(selection: $currentIndex) {
-                        ForEach(filtered.indices, id: \.self) { index in
-                            bannerSlide(banner: filtered[index])
-                                .tag(index)
-                        }
+                TabView(selection: $currentIndex) {
+                    ForEach(filtered.indices, id: \.self) { index in
+                        bannerSlide(banner: filtered[index], bannerTarget: $bannerTarget)
+                            .tag(index)
                     }
-                    .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
-                    .frame(height: 320)
-                    .onReceive(timer) { _ in
-                        withAnimation {
-                            currentIndex = (currentIndex + 1) % filtered.count
-                        }
+                }
+                .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
+                .frame(height: 320)
+                .onReceive(timer) { _ in
+                    withAnimation {
+                        currentIndex = (currentIndex + 1) % filtered.count
                     }
                 }
             }
         }
         .onAppear {
             Task {
-                if vm.banners.filter({ $0.brandId == brandId }).isEmpty {
-                    await vm.fetchBanners(for: brandId)
+                if !BannerViewModel.shared.prefetchedBrands.contains(brandId ?? "") {
+                    await BannerViewModel.shared.fetchBanners(for: brandId)
                 }
             }
         }
@@ -114,25 +108,21 @@ struct DynamicBannerCarousel: View {
 
     // MARK: - Banner Slide View
     @ViewBuilder
-    private func bannerSlide(banner: Banner) -> some View {
+    private func bannerSlide(banner: Banner, bannerTarget: Binding<BannerNavigationTarget?>) -> some View {
         ZStack {
-            AsyncImage(url: URL(string: banner.imageUrl)) { phase in
-                switch phase {
-                case .empty:
+            KFImage(URL(string: banner.imageUrl))
+                .resizable()
+                .placeholder {
                     Color.gray.opacity(0.1).overlay(ProgressView())
-                case .success(let image):
-                    image.resizable().scaledToFill()
-                case .failure:
-                    Color.red.opacity(0.2).overlay(Text("❌ Chyba obrázku"))
-                @unknown default:
-                    EmptyView()
                 }
-            }
-            .frame(height: 320)
-            .clipped()
+                .cancelOnDisappear(true)
+                .scaledToFill()
+                .frame(height: 320)
+                .clipped()
 
             VStack(spacing: 12) {
                 Spacer()
+
                 VStack(spacing: 6) {
                     Text(banner.title)
                         .font(.title).bold()
@@ -143,14 +133,15 @@ struct DynamicBannerCarousel: View {
                         .foregroundColor(.white.opacity(0.9))
                 }
                 .padding(.horizontal, 24)
+
                 Button("Prohlédnout") {
                     Task {
                         guard let destination = banner.destination else { return }
 
                         func navigate(_ target: BannerNavigationTarget) {
-                            bannerTarget = nil
+                            bannerTarget.wrappedValue = nil
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                                bannerTarget = target
+                                bannerTarget.wrappedValue = target
                             }
                         }
 
@@ -170,11 +161,10 @@ struct DynamicBannerCarousel: View {
                         } else if destination == "profile" {
                             navigate(.profile)
                         } else {
-                            print("⚠️ Unknown destination: \(destination)")
+                            print(" Unknown destination: \(destination)")
                         }
                     }
                 }
-
                 .font(.headline)
                 .padding(.vertical, 10)
                 .padding(.horizontal, 24)
